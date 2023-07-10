@@ -1,7 +1,10 @@
 from PySide2.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QShortcut, QPushButton
 from PySide2.QtGui import QKeySequence
 # My files 
+import encoder
+import xmlHandler
 import addAcc 
+import mng
 
 class Wnd(QMainWindow):
     def __init__(self):
@@ -28,7 +31,7 @@ class Wnd(QMainWindow):
         # Manage existing accounts
         accMngBtn = QPushButton(parent=centralWidget, text='Manage')
         accMngBtn.setDefault(True)
-        # accMngBtn.clicked.connect(self.ShowAccManagerWindow)
+        accMngBtn.clicked.connect(mng.ShowAccManagerWindow)
         # Place widgets
         centralWidgetLayout = QHBoxLayout()
         centralWidgetLayout.addWidget(addAccBtn)
@@ -43,13 +46,15 @@ class Wnd(QMainWindow):
 
     def closeEvent(self, e):
         super().closeEvent(e)
-        # Manually close child window
+        # Manually close children windows
         if addAcc.window != None:
             addAcc.window.close()
+        if mng.window != None:
+            mng.window.close()
 
 _app = QApplication()
+encoder.Init()
+xmlHandler.Init()
 window = Wnd()
 window.show()
 _app.exec_()
-# Window closed
-print('App closed')
