@@ -1,6 +1,8 @@
-from PySide2.QtCore import Qt
+import ctypes
+from PySide2.QtCore import Qt, QSize
 from PySide2.QtWidgets import QMainWindow, QWidget, QMessageBox, QShortcut, QVBoxLayout, QHBoxLayout, QLineEdit, QTableWidget, QTableWidgetItem, QMenu as QRightClickMenu
-from PySide2.QtGui import QKeySequence
+from PySide2.QtGui import QKeySequence, QIcon
+import pyperclip
 # My files
 import xmlHandler
 import addAcc
@@ -30,6 +32,7 @@ class Wnd(QMainWindow):
 
     def FocusOnTableAfterEdit(self):
         self.editInput.deleteLater()
+        self.editInput = None
         self.table.setFocus()
 
     def UpdateFieldValue(self):
@@ -128,10 +131,23 @@ class Wnd(QMainWindow):
         self.searchInput.setFocus()
         self.searchInput.selectAll()
 
+    def CopySelectedValue(self):
+        selItem = self.table.selectedItems()[0]
+        value = selItem.text()
+        pyperclip.copy(value)
+
     def __init__(self):
         super().__init__(parent=None)
         # Window properties 
         self.setWindowTitle('Manage Accounts')
+        # Tell windows to use the window icon as the taskbar icon
+        myappid = u'mycompany.myproduct.subproduct.version'
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        # Change window icon
+        iconSize = QSize(32, 32) 
+        self.setIconSize(iconSize)
+        mainWndIcon = QIcon('./Resources/app-icon32.png')
+        self.setWindowIcon(mainWndIcon)
         self.setMinimumSize(800, 600)
         self.showMaximized()
         self.setStyleSheet("""
@@ -180,6 +196,9 @@ class Wnd(QMainWindow):
         # Table shortcuts
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.ShowRightClickTableMenu)
+        CopyValue = QShortcut(QKeySequence('Return'), self.table)
+        CopyValue.setAutoRepeat(False)
+        CopyValue.activated.connect(self.CopySelectedValue)
         # Place widgets
         self.centralWidgetLayout = QVBoxLayout()
         self.centralWidgetLayout.setAlignment(Qt.AlignTop)

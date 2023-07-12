@@ -1,5 +1,7 @@
+import ctypes
+from PySide2.QtCore import QSize 
 from PySide2.QtWidgets import QMainWindow, QWidget, QShortcut, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QMessageBox
-from PySide2.QtGui import QKeySequence
+from PySide2.QtGui import QKeySequence, QIcon
 import random
 # My files
 import xmlHandler
@@ -79,6 +81,14 @@ class Wnd(QMainWindow):
         super().__init__(parent=None)
         # Window properties 
         self.setWindowTitle('New Account')
+        # Tell windows to use the window icon as the taskbar icon
+        myappid = u'mycompany.myproduct.subproduct.version'
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        # Change window icon
+        iconSize = QSize(32, 32) 
+        self.setIconSize(iconSize)
+        mainWndIcon = QIcon('./Resources/app-icon32.png')
+        self.setWindowIcon(mainWndIcon)
         self.setGeometry(50, 50, 400, 600)
         self.setStyleSheet("""
 
