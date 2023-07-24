@@ -136,7 +136,7 @@ class Wnd(QMainWindow):
         value = selItem.text()
         pyperclip.copy(value)
 
-    def __init__(self):
+    def __init__(self, mainWindow):
         super().__init__(parent=None)
         # Window properties 
         self.setWindowTitle('Manage Accounts')
@@ -197,6 +197,7 @@ class Wnd(QMainWindow):
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.ShowRightClickTableMenu)
         CopyValue = QShortcut(QKeySequence('Return'), self.table)
+        CopyValue.setContext(Qt.WidgetShortcut)
         CopyValue.setAutoRepeat(False)
         CopyValue.activated.connect(self.CopySelectedValue)
         # Place widgets
@@ -210,15 +211,18 @@ class Wnd(QMainWindow):
         CloseMainWindow = QShortcut(QKeySequence('Ctrl+W'), self)
         CloseMainWindow.setAutoRepeat(False)
         CloseMainWindow.activated.connect(self.close)
+        CloseApp = QShortcut(QKeySequence('Ctrl+Shift+W'), self)
+        CloseApp.setAutoRepeat(False)
+        CloseApp.activated.connect(mainWindow.close)
 
     def closeEvent(self, e):
         super().closeEvent(e)
         global window
         window = None
 
-def ShowAccManagerWindow():
+def ShowAccManagerWindow(mainWindow):
     global window
     if addAcc.window != None or window != None:
         return
-    window = Wnd()
+    window = Wnd(mainWindow)
     window.show()

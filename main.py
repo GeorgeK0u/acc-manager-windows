@@ -36,12 +36,12 @@ class Wnd(QMainWindow):
         # Add accounts
         addAccBtn = QPushButton(parent=centralWidget, text='Add')
         addAccBtn.setDefault(True)
-        addAccBtn.clicked.connect(addAcc.ShowAddAccountWindow)
+        addAccBtn.clicked.connect(lambda:addAcc.ShowAddAccountWindow(self))
         addAccBtn.setFocus()
         # Manage existing accounts
         accMngBtn = QPushButton(parent=centralWidget, text='Manage')
         accMngBtn.setDefault(True)
-        accMngBtn.clicked.connect(mng.ShowAccManagerWindow)
+        accMngBtn.clicked.connect(lambda:mng.ShowAccManagerWindow(self))
         # Place widgets
         centralWidgetLayout = QHBoxLayout()
         centralWidgetLayout.addWidget(addAccBtn)
@@ -52,6 +52,9 @@ class Wnd(QMainWindow):
         CloseMainWindow = QShortcut(QKeySequence('Ctrl+W'), self)
         CloseMainWindow.setAutoRepeat(False)
         CloseMainWindow.activated.connect(self.close)
+        CloseApp = QShortcut(QKeySequence('Ctrl+Shift+W'), self)
+        CloseApp.setAutoRepeat(False)
+        CloseApp.activated.connect(self.close)
 
 
     def closeEvent(self, e):
@@ -67,4 +70,5 @@ encoder.Init()
 xmlHandler.Init()
 window = Wnd()
 window.show()
+window.setFocus()
 _app.exec_()
