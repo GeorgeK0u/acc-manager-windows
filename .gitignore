@@ -1,5 +1,8 @@
 env
-Resources
 __pycache__
+build
+dist
+main.spec
 readme.md
 log.txt
+Resources
