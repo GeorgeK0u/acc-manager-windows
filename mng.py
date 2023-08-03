@@ -190,7 +190,6 @@ class Wnd(QMainWindow):
         # An extra offset to remove the scrollbar
         lastColOffset = 40
         self.table.setMaximumWidth(columnWidthSum+lastColOffset+scrollbarOffset)
-        self.table.setFixedHeight(850)
         # Specify focus
         self.UpdateSearchResults()
         # Table shortcuts

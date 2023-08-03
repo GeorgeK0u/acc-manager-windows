@@ -5,6 +5,8 @@ def Init():
     wrongChars = 5
 
 def Encrypt(text):
+    if text == None:
+        return text
     encryptedText = ""
     for ch in text:
         chAscii = ord(ch)
@@ -13,6 +15,8 @@ def Encrypt(text):
     return encryptedText
 
 def Decrypt(text):
+    if text == None:
+        return text
     decryptedText = ""
     for ch in text:
         chAscii = ord(ch)

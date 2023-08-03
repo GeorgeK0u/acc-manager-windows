@@ -5,16 +5,18 @@ import encoder
 saveFileName = None
 xmlTree = None
 xmlRoot = None
+lockTagName = None
 accTagName = None
 accNameTagName = None
 ExtraInfoTagName = None
 pwdTagName = None
 
 def Init():
-    global saveFileName, xmlTree, xmlRoot, accTagName, accNameTagName, extraInfoTagName, pwdTagName
+    global saveFileName, xmlTree, xmlRoot, lockTagName, accTagName, accNameTagName, extraInfoTagName, pwdTagName
     saveFileName = "Resources/save.xml"
     xmlTree = et.parse(saveFileName)
     xmlRoot = xmlTree.getroot()
+    lockTagName = 'lock'
     accTagName = "account"
     accNameTagName = "account-name"
     extraInfoTagName = "account-extra-info"
@@ -22,6 +24,22 @@ def Init():
 
 def Commit():
     xmlTree.write(saveFileName)
+
+def GetLockCode():
+    lockTag = xmlRoot.find(lockTagName)
+    curCode = encoder.Decrypt(lockTag.text)
+    return curCode
+
+def UpdateLockCode(nCode):
+    curCode = GetLockCode()
+    if curCode == nCode:
+        return
+    lockTag = xmlRoot.find(lockTagName)
+    lockTag.text = encoder.Encrypt(nCode)
+    Commit()
+
+def IsLocked():
+    return GetLockCode() != None
 
 def SaveAcc(accName, extraInfo, pwd):
     encAccName = encoder.Encrypt(accName)
