@@ -7,7 +7,7 @@ def Init():
 def Encrypt(text):
     if text == None:
         return text
-    encryptedText = ""
+    encryptedText = ''
     for ch in text:
         chAscii = ord(ch)
         eChar = chr(chAscii + wrongChars)
@@ -17,7 +17,7 @@ def Encrypt(text):
 def Decrypt(text):
     if text == None:
         return text
-    decryptedText = ""
+    decryptedText = ''
     for ch in text:
         chAscii = ord(ch)
         dChar = chr(chAscii - wrongChars)

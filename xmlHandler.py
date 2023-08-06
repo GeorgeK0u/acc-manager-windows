@@ -13,14 +13,14 @@ pwdTagName = None
 
 def Init():
     global saveFileName, xmlTree, xmlRoot, lockTagName, accTagName, accNameTagName, extraInfoTagName, pwdTagName
-    saveFileName = "Resources/save.xml"
+    saveFileName = 'Resources/save.xml'
     xmlTree = et.parse(saveFileName)
     xmlRoot = xmlTree.getroot()
     lockTagName = 'lock'
-    accTagName = "account"
-    accNameTagName = "account-name"
-    extraInfoTagName = "account-extra-info"
-    pwdTagName = "account-pwd"
+    accTagName = 'account'
+    accNameTagName = 'account-name'
+    extraInfoTagName = 'account-extra-info'
+    pwdTagName = 'account-pwd'
 
 def Commit():
     xmlTree.write(saveFileName)
