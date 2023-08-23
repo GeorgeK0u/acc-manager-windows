@@ -1,22 +1,25 @@
 import lxml.etree as et
 # My widgets
 import encoder
+import systemTray
 
 saveFileName = None
 xmlTree = None
 xmlRoot = None
 lockTagName = None
+runOnBgTagName = None
 accTagName = None
 accNameTagName = None
-ExtraInfoTagName = None
+extraInfoTagName = None
 pwdTagName = None
 
 def Init():
-    global saveFileName, xmlTree, xmlRoot, lockTagName, accTagName, accNameTagName, extraInfoTagName, pwdTagName
+    global saveFileName, xmlTree, xmlRoot, lockTagName, runOnBgTagName, accTagName, accNameTagName, extraInfoTagName, pwdTagName
     saveFileName = 'Resources/save.xml'
     xmlTree = et.parse(saveFileName)
     xmlRoot = xmlTree.getroot()
     lockTagName = 'lock'
+    runOnBgTagName = 'run-on-bg'
     accTagName = 'account'
     accNameTagName = 'account-name'
     extraInfoTagName = 'account-extra-info'
@@ -41,10 +44,28 @@ def UpdateLockCode(nCode):
 def IsLocked():
     return GetLockCode() != None
 
-def SaveAcc(accName, extraInfo, pwd):
-    encAccName = encoder.Encrypt(accName)
-    encExtraInfo = encoder.Encrypt(extraInfo)
-    encPwd = encoder.Encrypt(pwd)
+def GetRunOnBg():
+    runOnBgTag = xmlRoot.find(runOnBgTagName)
+    value = runOnBgTag.text
+    return True if value == 'enabled' else False 
+
+def UpdateRunOnBgCheckBox(nState):
+    curState = GetRunOnBg()
+    if curState == nState:
+        return
+    runOnBgTag = xmlRoot.find(runOnBgTagName)
+    runOnBgTag.text = 'enabled' if nState else 'disabled'
+    Commit()
+    # Apply change without need to restart app
+    if nState:
+        systemTray.Show()
+    else:
+        systemTray.Hide()
+
+def SaveAcc(EncAccDetails):
+    encAccName = EncAccDetails[0]
+    encExtraInfo = EncAccDetails[1]
+    encPwd = EncAccDetails[2]
     accTag = et.SubElement(xmlRoot, accTagName)
     accNameTag = et.SubElement(accTag, accNameTagName)
     accNameTag.text = encAccName
@@ -53,10 +74,11 @@ def SaveAcc(accName, extraInfo, pwd):
     pwdTag = et.SubElement(accTag, pwdTagName)
     pwdTag.text = encPwd
     Commit()
+    print('Added the new account from broadcast')
 
-def GetAccs():
+def GetAccs(decrypt=True):
     Accs = xmlRoot.findall(accTagName)
-    return list(map(lambda AccTag:[encoder.Decrypt(AccTag[0].text), encoder.Decrypt(AccTag[1].text), encoder.Decrypt(AccTag[2].text)], Accs))
+    return list(map(lambda AccTag:[encoder.Decrypt(AccTag[0].text) if decrypt else AccTag[0].text, encoder.Decrypt(AccTag[1].text) if decrypt else AccTag[1].text, encoder.Decrypt(AccTag[2].text) if decrypt else AccTag[2].text], Accs))
 
 def GetAccNames():
     Accs = GetAccs()
@@ -72,8 +94,7 @@ def ChangeAccValue(accName, colIndex, nValue):
     Acc = xmlRoot.findall(accTagName)[accIndex]
     AccDetail = Acc[colIndex]
     AccDetail.text = encoder.Encrypt(nValue)
-    # Update XML
-    xmlTree.write(saveFileName)
+    Commit()
 
 def DeleteAcc(accName):
     AccNames = GetAccNames()

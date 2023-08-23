@@ -5,6 +5,7 @@ def Init():
     wrongChars = 5
 
 def Encrypt(text):
+    # No lock code
     if text == None:
         return text
     encryptedText = ''
@@ -15,6 +16,7 @@ def Encrypt(text):
     return encryptedText
 
 def Decrypt(text):
+    # No lock code
     if text == None:
         return text
     decryptedText = ''
