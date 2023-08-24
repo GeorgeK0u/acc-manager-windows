@@ -17,8 +17,15 @@ TrayIcon = None
 SORT_TIME_ADDED = 0
 SORT_ALPH = 1
 SORT_NUM_OF_FILLED_FIELDS = 2
+ASC_ORDER = 0
+DESC_ORDER = 1
+ASC_TEXT = '/\\\n|'
+DESC_TEXT = '|\n\\/'
 
 class MyTable(QTableWidget):
+    lastSelValue = None
+    lastSelCol = None
+
     def __init__(self, parent):
         super().__init__(parent)
         # Shortcuts
@@ -64,7 +71,11 @@ class MyTable(QTableWidget):
             return
         # The other sort options apply to all columns by default 
         if Window.selSortOptionIndex == SORT_ALPH:
+            Window.StoreCurTableSelection()
+            # Update sort
             Window.SortResults()
+            # Focus on selected item before sort
+            Window.FocusOnLastTableSelection()
 
     def GetRowItem(self, rowIndex):
         RowItem = []
@@ -100,6 +111,8 @@ class MainWindow(QWidget):
     sortColIndex = 0
     # By default sort by time account added
     selSortOptionIndex = 0
+    # By default ascending
+    sortOrder = ASC_ORDER
 
     def __init__(self):
         super().__init__(parent=None)
@@ -130,13 +143,18 @@ class MainWindow(QWidget):
         self.SearchInput.returnPressed.connect(self.UpdateSearchResults)
         # Search match case checkbox
         self.SearchMatchCaseCheckbox = QCheckBox(parent=self, text='Match case')
-        # Display order dropdown menu
+        # Display sort dropdown menu
         self.SortResultsLbl = QLabel(parent=self, text='Sort results')
         self.SortResultsLbl.setProperty('class', 'sort-results-label')
         self.SortResultsDropMenu = QComboBox(parent=self)
         self.SortResultsDropMenu.setProperty('class', 'sort-results-dropdown')
         self.SortResultsDropMenu.addItems(['Time added', 'Alphabetically', 'Number of filled fields'])
         self.SortResultsDropMenu.currentIndexChanged.connect(self.OnSortDropdownOptionChange)
+        # Sort order button 
+        self.SortOrderBtn = QPushButton(parent=self, text=ASC_TEXT)
+        # Trigger enter key press as click 
+        self.SortOrderBtn.setDefault(True)
+        self.SortOrderBtn.clicked.connect(self.OnSortOrderBtnClick)
         # Add btn
         self.AddAccBtn = QPushButton(parent=self, text='Add Account')
         # Trigger enter key press as click 
@@ -221,6 +239,10 @@ class MainWindow(QWidget):
         # Sort results widgets
         self.SortResultsLbl.setSizePolicy(FixedSizePolicy)
         self.SortResultsDropMenu.setSizePolicy(FixedSizePolicy)
+        # Sort order btn
+        self.SortOrderBtn.setSizePolicy(FixedSizePolicy)
+        self.SortOrderBtn.setFixedHeight(30)
+        self.SortOrderBtn.setStyleSheet('border: none;')
         # Add acc btn
         self.AddAccBtn.setSizePolicy(FixedSizePolicy)
         # Set the button height as it was before attaching the fixed size policy
@@ -246,12 +268,14 @@ class MainWindow(QWidget):
         # Increase number row width to fit content at all times
         TableNumberRow.setFixedWidth(tableNumRowWidth+10)
         # Layout
-        # Search child layout
+        # Sort layout
         SortLayout = QHBoxLayout()
         SortLayout.setAlignment(Qt.AlignLeft)
         SortLayout.setContentsMargins(12, 0, 0, 0)
         SortLayout.addWidget(self.SortResultsLbl)
         SortLayout.addWidget(self.SortResultsDropMenu)
+        SortLayout.addWidget(self.SortOrderBtn)
+        # Search layout
         SearchLayout = QHBoxLayout()
         SearchLayout.setAlignment(Qt.AlignLeft)
         SearchLayout.addWidget(self.SearchInput)
@@ -275,28 +299,54 @@ class MainWindow(QWidget):
         self.WindowLayout.addWidget(self.Table)
         self.setLayout(self.WindowLayout)
 
+    def StoreCurTableSelection(self):
+        selRow = self.Table.currentRow()
+        if selRow == -1:
+            self.Table.lastSelValue = None
+            self.Table.lastSelCol = -1
+            return
+        selCol = self.Table.currentColumn()
+        selValue = self.Table.item(selRow, selCol).text()
+        self.Table.lastSelValue = selValue
+        self.Table.lastSelCol = selCol
+
+    def FocusOnLastTableSelection(self):
+        if self.Table.lastSelValue == None:
+            return
+        nSelRow = None
+        selCol = self.Table.lastSelCol
+        selValue = self.Table.lastSelValue
+        Items = self.Table.GetAllItems()
+        for i in range(len(Items)):
+            Item = Items[i]
+            if Item[selCol] != selValue:
+                continue
+            nSelRow = i
+            break
+        # Get item
+        Item = self.Table.item(nSelRow, selCol)
+        # Focus on item
+        self.Table.setCurrentItem(Item)
+        # Select item
+        self.Table.setItemSelected(Item, True)
+
     def SortResults(self, results=None):
         # Get current items as the results
         if results == None:
             results = self.Table.GetAllItems()
         self.Table.ClearAllItems()
-        # Handle no or 1 results
-        if len(results) <= 1:
-            if len(results) == 1:
-                self.Table.SetRowItem(results[0])
-            return
         optionIndex = self.selSortOptionIndex
         # Time added
         if optionIndex == 0:
-            self.SortByTimeAdded(results, order=None)
+            self.SortByTimeAdded(results)
         # Alphabetically 
         elif optionIndex == 1:
             # Ascending / descending
             # order = SortOrderBtn.value
-            self.SortAlphabetically(results, order=None)
+            self.SortAlphabetically(results)
         # By number of filled fields
         elif optionIndex == 2:
-            self.SortByNumberOfFilledFields(results, order=None)
+            self.SortByNumberOfFilledFields(results)
 
     def OnSortDropdownOptionChange(self, optionIndex):
         # Update sort option
@@ -305,14 +355,17 @@ class MainWindow(QWidget):
         itemCount = len(self.Table.GetAllItems())
         if itemCount <= 1:
             return
+        self.StoreCurTableSelection()
         # Apply sort
         self.SortResults()
+        # Focus on selected item before sort
+        self.FocusOnLastTableSelection()
 
     def GetTimeAddedItemIndexOf(self, Accs, item):
         index = Accs.index(item)
         return index
 
-    def SortByTimeAdded(self, results, order):
+    def SortByTimeAdded(self, results):
         Items = results
         itemCount = len(Items)
         AccsSortedByTimeAdded = xmlHandler.GetAccs()
@@ -325,7 +378,7 @@ class MainWindow(QWidget):
             j = i+1
             while j < itemCount:
                 itemIndex = self.GetTimeAddedItemIndexOf(AccsSortedByTimeAdded, Items[j])
-                if itemIndex < topItemIndex:
+                if (self.sortOrder == ASC_ORDER and itemIndex < topItemIndex) or (self.sortOrder == DESC_ORDER and itemIndex > topItemIndex):
                     topItem = Items[j]
                     topIndex = j
                     topItemIndex = itemIndex
@@ -363,7 +416,7 @@ class MainWindow(QWidget):
             return 1
         return 2
 
-    def SortAlphabetically(self, results, order):
+    def SortAlphabetically(self, results):
         Items = results
         itemCount = len(Items)
         # Get sort column items
@@ -384,7 +437,7 @@ class MainWindow(QWidget):
             while j < itemCount:
                 value = ColItems[j]
                 res = self.Compare(top, value)
-                if res == 1:
+                if (self.sortOrder == ASC_ORDER and res == 1) or (self.sortOrder == DESC_ORDER and res == 2):
                     top = value
                     topIndex = j
                 j += 1
@@ -414,33 +467,46 @@ class MainWindow(QWidget):
             filledCount += 1
         return filledCount
 
-    def SortByNumberOfFilledFields(self, results, order):
+    def SortByNumberOfFilledFields(self, results):
         Items = results
         itemCount = len(Items)
         # Sort
         i = 0
         while i < itemCount-1:
-            min = self.GetCountOfFilledFields(Items[i])
-            minIndex = i
+            top = self.GetCountOfFilledFields(Items[i])
+            topIndex = i
             j = i+1
             while j < itemCount:
                 count = self.GetCountOfFilledFields(Items[j])
-                if min > count:
-                    min = count
-                    minIndex = j
+                if (self.sortOrder == ASC_ORDER and count < top) or (self.sortOrder == DESC_ORDER and count > top):
+                    top = count
+                    topIndex = j
                 j += 1
             # Transport
-            if minIndex > i:
+            if topIndex > i:
                 tmpItem = Items[i]
-                minItem = Items[minIndex]
-                Items[minIndex] = tmpItem
-                Items[i] = minItem
+                topItem = Items[topIndex]
+                Items[topIndex] = tmpItem
+                Items[i] = topItem
             # Display
             Item = Items[i]
             self.Table.SetRowItem(Item)
             i += 1
         # Set last item
         self.Table.SetRowItem(Items[-1])
+
+    def OnSortOrderBtnClick(self):
+        self.sortOrder = DESC_ORDER if self.sortOrder == ASC_ORDER else ASC_ORDER
+        self.SortOrderBtn.setText(DESC_TEXT if self.sortOrder == DESC_ORDER else ASC_TEXT)
+        # Check if needed to update results
+        itemCount = len(self.Table.GetAllItems())
+        if itemCount <= 1:
+            return
+        self.StoreCurTableSelection()
+        # Update sort
+        self.SortResults()
+        # Focus on selected item before sort
+        self.FocusOnLastTableSelection()
 
     def CopySelectedValue(self):
         selItem = self.Table.selectedItems()[0]
@@ -472,7 +538,7 @@ class MainWindow(QWidget):
                     break
         # Display search results
         # Default sorting
-        if self.selSortOptionIndex == 0:
+        if self.selSortOptionIndex == 0 or len(SearchResults) <= 1:
             for result in SearchResults:
                 self.Table.SetRowItem(result)
         else:
@@ -530,12 +596,15 @@ class MainWindow(QWidget):
         self.EditInput.setText(self.curValue)
         # Edit input shortcuts
         DeleteEditInput = QShortcut(QKeySequence('Esc'), self.EditInput)
+        DeleteEditInput.setContext(Qt.WidgetShortcut)
         DeleteEditInput.setAutoRepeat(False)
         DeleteEditInput.activated.connect(self.FocusOnTableAfterEdit)
         PreventTabChange = QShortcut(QKeySequence('Tab'), self.EditInput)
+        PreventTabChange.setContext(Qt.WidgetShortcut)
         PreventTabChange.setAutoRepeat(False)
         PreventTabChange.activated.connect(None)
         PreventShiftTabChange = QShortcut(QKeySequence('Shift+Tab'), self.EditInput)
+        PreventShiftTabChange.setContext(Qt.WidgetShortcut)
         PreventShiftTabChange.setAutoRepeat(False)
         PreventShiftTabChange.activated.connect(None)
         self.WindowLayout.addWidget(self.EditInput)
