@@ -1,7 +1,7 @@
 import ctypes
 import pyperclip
 from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QWidget, QMessageBox, QShortcut, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QTableWidget, QHeaderView, QTableWidgetItem, QMenu as QRightClickMenu, QSizePolicy, QComboBox
+from PySide2.QtWidgets import QWidget, QMessageBox, QShortcut, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QTableWidget, QHeaderView, QTableWidgetItem, QMenu as QRightClickMenu, QSizePolicy, QComboBox, QDialog, QStyle
 from PySide2.QtGui import QKeySequence, QIcon
 # My files
 import xmlHandler
@@ -96,6 +96,8 @@ class MyTable(QTableWidget):
         colIndex = 0
         for value in values:
             item = QTableWidgetItem(value)
+            # Prevent direct item editing
+            item.setFlags(Qt.ItemIsSelectable | ~Qt.ItemIsEditable)
             self.setItem(self.rowCount()-1, colIndex, item)
             colIndex += 1
 
@@ -104,6 +106,59 @@ class MyTable(QTableWidget):
         while rowCount >= 0:
             self.removeRow(rowCount)
             rowCount -= 1
+
+class InformationDialog(QDialog):
+    def __init__(self, parent, size, title, text, details):
+        super().__init__(parent=parent)
+        self.size = size
+        self.title = title
+        self.text = text
+        self.details = details
+        self.InitUI()
+
+    def InitUI(self):
+        # Window properties
+        width = self.size[0]
+        height = self.size[1]
+        self.setFixedSize(width, height)
+        self.setWindowTitle(self.title)
+        # Icon
+        WarningIcon = self.style().standardIcon(QStyle.SP_MessageBoxInformation)
+        self.setWindowIcon(WarningIcon)
+        # Widgets
+        # Text
+        Text = QLabel(parent=self, text=self.text)
+        Details = QLabel(parent=self, text=self.details)
+        # Action buttons 
+        self.YesBtn = QPushButton(parent=self, text='Yes')
+        self.YesBtn.setDefault(True)
+        self.YesBtn.clicked.connect(lambda:self.OnDialogBtnClick(clickedBtn=self.YesBtn))
+        self.NoBtn = QPushButton(parent=self, text='No')
+        self.NoBtn.setDefault(True)
+        self.NoBtn.clicked.connect(lambda:self.OnDialogBtnClick(clickedBtn=self.NoBtn))
+        # Button layout
+        BtnLayout = QHBoxLayout()
+        BtnLayout.addWidget(self.YesBtn)
+        BtnLayout.addWidget(self.NoBtn)
+        # Dialog layout
+        DialogLayout = QVBoxLayout() 
+        DialogLayout.addWidget(Text)
+        DialogLayout.addWidget(Details)
+        DialogLayout.addLayout(BtnLayout)
+        self.setLayout(DialogLayout)
+        # Shortcuts
+        CloseDialog = QShortcut(QKeySequence('Esc'), self)
+        CloseDialog.setContext(Qt.WidgetShortcut)
+        CloseDialog.setAutoRepeat(False)
+        CloseDialog.activated.connect(self.reject)
+        # Show dialog
+        self.show()
+
+    def OnDialogBtnClick(self, clickedBtn):
+        if clickedBtn == self.YesBtn:
+            self.accept()
+        else:
+            self.reject()
 
 class MainWindow(QWidget):
     EditInput = None
@@ -152,21 +207,25 @@ class MainWindow(QWidget):
         self.SortResultsDropMenu.currentIndexChanged.connect(self.OnSortDropdownOptionChange)
         # Sort order button 
         self.SortOrderBtn = QPushButton(parent=self, text=ASC_TEXT)
+        self.SortOrderBtn.setProperty('class', 'sort-order-btn')
         # Trigger enter key press as click 
         self.SortOrderBtn.setDefault(True)
         self.SortOrderBtn.clicked.connect(self.OnSortOrderBtnClick)
         # Add btn
         self.AddAccBtn = QPushButton(parent=self, text='Add Account')
+        self.AddAccBtn.setProperty('class', 'add-acc-btn')
         # Trigger enter key press as click 
         self.AddAccBtn.setDefault(True)
         self.AddAccBtn.clicked.connect(addAcc.Create)
         # Manual sync btn
         self.ManualSyncBtn = QPushButton(parent=self, text='Sync')
+        self.ManualSyncBtn.setProperty('class', 'manual-sync-btn')
         # Trigger enter key press as click 
         self.ManualSyncBtn.setDefault(True)
         self.ManualSyncBtn.clicked.connect(clientSocket.SendManualSyncMsg)
         # Settings btn
         self.SettingsBtn = QPushButton(parent=self, text='Settings')
+        self.SettingsBtn.setProperty('class', 'settings-btn')
         # Trigger enter key press as click 
         self.SettingsBtn.setDefault(True)
         self.SettingsBtn.clicked.connect(settings.Create)
@@ -219,7 +278,7 @@ class MainWindow(QWidget):
                 font-size: 8pt;
             }
 
-            QPushButton 
+            .sort-order-btn, .settings-btn, .add-acc-btn, .manual-sync-btn
             {
                 border: 1px solid #333;
             }
@@ -609,6 +668,7 @@ class MainWindow(QWidget):
         PreventShiftTabChange.activated.connect(None)
         self.WindowLayout.addWidget(self.EditInput)
 
+
     def UpdateFieldValue(self):
         nValue = self.EditInput.text()
         if self.curValue == nValue:
@@ -616,17 +676,26 @@ class MainWindow(QWidget):
             return
         # Account name value update  
         if self.selCol == 0:
-            # Check if already exists
+            # Already exists
             AccNames = xmlHandler.GetAccNames()
             if AccNames.__contains__(nValue):
-                QMessageBox.critical(self, 'Not Added', 'This account name already exists')
+                QMessageBox.critical(self, 'Not Changed', 'This account name already exists')
                 self.FocusOnTableAfterEdit()
                 return
+        elif self.selCol == 2:
+            # Warn user if password already exists
+            Pwds = xmlHandler.GetAccPwds()
+            if Pwds.__contains__(nValue):
+                WarningDialog = InformationDialog(parent=self, size=(420, 150), title='Warning', text='This password already exists', details="Using the same password for multiple accounts isn't recommended.\nContinue ?")
+                action = WarningDialog.exec_()
+                # User selected no
+                if action == 0:
+                    return
         # Sync
         operator = 'U'
         selAccName = self.Table.item(self.selRow, 0).text()
         encSelAccName = encoder.Encrypt(selAccName)
-        encSelCol = encoder.Encrypt(self.selCol)
+        encSelCol = encoder.Encrypt(str(self.selCol))
         encNewValue = encoder.Encrypt(nValue)
         msg = f'{clientSocket.SYNC_BC}, {operator}, {encSelAccName}, {encSelCol}, {encNewValue}'
         clientSocket.SendSyncBroadcastMsg(msg)
