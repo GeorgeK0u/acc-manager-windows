@@ -14,6 +14,7 @@ import settings
 
 Window = None
 TrayIcon = None
+allPwdsVisibilityBool = None
 SORT_TIME_ADDED = 0
 SORT_ALPH = 1
 SORT_NUM_OF_FILLED_FIELDS = 2
@@ -21,6 +22,8 @@ ASC_ORDER = 0
 DESC_ORDER = 1
 ASC_TEXT = '/\\\n|'
 DESC_TEXT = '|\n\\/'
+SHOW_PWDS_TEXT = 'Show passwords'
+HIDE_PWDS_TEXT = 'Hide passwords'
 
 class MyTable(QTableWidget):
     lastSelValue = None
@@ -85,16 +88,17 @@ class MyTable(QTableWidget):
         return RowItem
     
     def GetAllItems(self):
-        Items = []
-        for rowIndex in range(self.rowCount()):
-            RowItem = self.GetRowItem(rowIndex) 
-            Items.append(RowItem)
-        return Items
+        # get copy instead of retrieving the table items
+        # due to working with password mask and trying to access indexes, values etc. 
+        return Window.AccsCopy
 
     def SetRowItem(self, values):
         self.setRowCount(self.rowCount() + 1)
         colIndex = 0
         for value in values:
+            # Default visibility for all pwds setting
+            if colIndex == 2 and not GetAllPwdsVisibilityBool():
+                value = encoder.MaskPassword(value)
             item = QTableWidgetItem(value)
             # Prevent direct item editing
             item.setFlags(Qt.ItemIsSelectable | ~Qt.ItemIsEditable)
@@ -162,6 +166,10 @@ class InformationDialog(QDialog):
 
 class MainWindow(QWidget):
     EditInput = None
+    AccsCopy = None
+    # Keep a count of manually switched password visibility fields
+    # to check update global password visibility btn operation
+    manualPwdVisCount = 0
     # Set first column as default sort column 
     sortColIndex = 0
     # By default sort by time account added
@@ -229,6 +237,13 @@ class MainWindow(QWidget):
         # Trigger enter key press as click 
         self.SettingsBtn.setDefault(True)
         self.SettingsBtn.clicked.connect(settings.Create)
+        # Pwd visibility btn
+        self.AllPwdsVisibilityBtn = QPushButton(parent=self)
+        self.AllPwdsVisibilityBtn.setText(HIDE_PWDS_TEXT if GetAllPwdsVisibilityBool() else SHOW_PWDS_TEXT)
+        self.AllPwdsVisibilityBtn.setProperty('class', 'pwd-visibility-btn')
+        # Trigger enter key press as click 
+        self.AllPwdsVisibilityBtn.setDefault(True)
+        self.AllPwdsVisibilityBtn.clicked.connect(self.OnAllPwdsVisibilityClick)
         # Accounts table
         self.Table = MyTable(parent=self)
         self.colCount = 3
@@ -240,6 +255,8 @@ class MainWindow(QWidget):
         Accs = xmlHandler.GetAccs()
         for acc in Accs:
             self.Table.SetRowItem(acc)
+        # Init pwd copy list
+        self.UpdateAccsCopyList(Accs)
         # Set layout
         self.Style()
         # Shortcuts
@@ -257,9 +274,73 @@ class MainWindow(QWidget):
         CopyValue.setContext(Qt.WidgetShortcut)
         CopyValue.setAutoRepeat(False)
         CopyValue.activated.connect(self.CopySelectedValue)
+        ShowHidePwd = QShortcut(QKeySequence('Space'), self.Table)
+        ShowHidePwd.setContext(Qt.WidgetShortcut)
+        ShowHidePwd.setAutoRepeat(False)
+        ShowHidePwd.activated.connect(self.OnSpaceCellPressed)
         CloseWindow = QShortcut(QKeySequence('Ctrl+W'), self)
         CloseWindow.setAutoRepeat(False)
         CloseWindow.activated.connect(self.close)
+
+    def OnSpaceCellPressed(self):
+        col = self.Table.currentColumn()
+        if col < 2: 
+            return
+        # Show/hide password
+        pwdText = self.Table.currentItem().text()
+        if pwdText.__contains__(encoder.PWD_MASK_CHAR):
+            rowIndex = self.Table.currentRow()
+            pwdText = self.GetPwdOfRow(rowIndex)
+            self.CheckUpdateAllPwdsVisibilityBtn(operationBool=True)
+        else:
+            pwdText = encoder.MaskPassword(pwdText)
+            self.CheckUpdateAllPwdsVisibilityBtn(operationBool=False)
+        self.Table.currentItem().setText(pwdText)
+        # Cause a re-paint to update cell value
+        self.Table.horizontalHeader().setFocus()
+        self.Table.setFocus()
+
+    def UpdateAllPwdsVisibilityBtn(self):
+        curValue = GetAllPwdsVisibilityBool()
+        nValue = not curValue
+        # Update btn text
+        self.AllPwdsVisibilityBtn.setText(HIDE_PWDS_TEXT if nValue else SHOW_PWDS_TEXT)
+        # Update bool
+        SetAllPwdsVisibilityBool(nValue)
+
+    def ResetManualPwdVisCount(self):
+        self.manualPwdVisCount = 0
+
+    def CheckUpdateAllPwdsVisibilityBtn(self, operationBool):
+        # Important because if the table items are low and the user manually toggles the password visibility shortcut for each item, then the global one will keep its current operation, which will be doing the same on the first click 
+        curGlobalOperationBool = GetAllPwdsVisibilityBool()
+        if curGlobalOperationBool ^ operationBool:
+            self.manualPwdVisCount += 1
+            if self.manualPwdVisCount == len(self.AccsCopy):
+                # Update btn text and operation
+                self.UpdateAllPwdsVisibilityBtn()
+                self.ResetManualPwdVisCount()
+        else:
+            self.manualPwdVisCount -= 1
+
+    def OnAllPwdsVisibilityClick(self):
+        self.UpdateAllPwdsVisibilityBtn()
+        # Update visibility
+        nValue = GetAllPwdsVisibilityBool()
+        for i in range(len(self.AccsCopy)):
+            item = self.Table.item(i, 2)
+            pwdValue = None
+            if nValue:
+                pwdValue = self.GetPwdOfRow(i)
+            else:
+                pwdText = item.text()
+                pwdValue = encoder.MaskPassword(pwdText)
+            item.setText(pwdValue)
+        # Cause a re-paint to update table values
+        self.Table.setFocus()
+        self.AllPwdsVisibilityBtn.setFocus()
+        # Reset
+        self.ResetManualPwdVisCount()
 
     def Style(self):
         self.setStyleSheet("""
@@ -281,6 +362,11 @@ class MainWindow(QWidget):
             .sort-order-btn, .settings-btn, .add-acc-btn, .manual-sync-btn
             {
                 border: 1px solid #333;
+            }
+
+            .pwd-visibility-btn
+            {
+                border: none;
             }
         """)
         FixedSizePolicy = QSizePolicy()
@@ -317,6 +403,9 @@ class MainWindow(QWidget):
         # Set the button height as it was before attaching the fixed size policy
         self.SettingsBtn.setFixedWidth(self.SettingsBtn.width())
         self.SettingsBtn.setFixedHeight(30)
+        # Pwd visibility btn
+        self.AllPwdsVisibilityBtn.setSizePolicy(FixedSizePolicy)
+        self.AllPwdsVisibilityBtn.setFixedHeight(30)
         # Accounts table
         # Expanding size policy for table columns
         for colIndex in range(self.colCount):
@@ -350,6 +439,8 @@ class MainWindow(QWidget):
         FeatureLayout.setSpacing(20)
         FeatureLayout.addWidget(self.AddAccBtn)
         FeatureLayout.addWidget(self.ManualSyncBtn)
+        FeatureLayout.addStretch()
+        FeatureLayout.addWidget(self.AllPwdsVisibilityBtn)
         # Parent layout
         self.WindowLayout = QVBoxLayout()
         self.WindowLayout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
@@ -366,6 +457,10 @@ class MainWindow(QWidget):
             return
         selCol = self.Table.currentColumn()
         selValue = self.Table.item(selRow, selCol).text()
+        if selCol == 2:
+            # Store password without mask to re-find it after sorting
+            if selValue.__contains__(encoder.PWD_MASK_CHAR):
+                selValue = self.GetPwdOfRow(selRow)
         self.Table.lastSelValue = selValue
         self.Table.lastSelCol = selCol
 
@@ -389,23 +484,36 @@ class MainWindow(QWidget):
         # Select item
         self.Table.setItemSelected(Item, True)
 
+    def UpdateAccsCopyList(self, items):
+        self.AccsCopy = items
+        
+    def GetPwdOfRow(self, rowIndex):
+        pwd = self.AccsCopy[rowIndex][2]
+        return pwd
+
     def SortResults(self, results=None):
         # Get current items as the results
         if results == None:
             results = self.Table.GetAllItems()
         self.Table.ClearAllItems()
         optionIndex = self.selSortOptionIndex
+        SortedResults = None
         # Time added
         if optionIndex == 0:
-            self.SortByTimeAdded(results)
+            SortedResults = self.SortByTimeAdded(results)
         # Alphabetically 
         elif optionIndex == 1:
-            # Ascending / descending
-            # order = SortOrderBtn.value
-            self.SortAlphabetically(results)
+            SortedResults = self.SortAlphabetically(results)
         # By number of filled fields
         elif optionIndex == 2:
-            self.SortByNumberOfFilledFields(results)
+            SortedResults = self.SortByNumberOfFilledFields(results)
+        # Display the items here to get the list without the password mask
+        # Display sorted results 
+        for Result in SortedResults:
+            self.Table.SetRowItem(Result)
+        # Update pwd copy list
+        self.UpdateAccsCopyList(SortedResults)
+        self.ResetManualPwdVisCount()
 
     def OnSortDropdownOptionChange(self, optionIndex):
         # Update sort option
@@ -447,12 +555,8 @@ class MainWindow(QWidget):
                 tmpItem = Items[i]
                 Items[topIndex] = tmpItem
                 Items[i] = topItem
-            # Display
-            Item = Items[i]
-            self.Table.SetRowItem(Item)
             i += 1
-        # Set last item
-        self.Table.SetRowItem(Items[-1])
+        return Items
 
     def Compare(self, a, b):
         # Ascending comparison
@@ -511,12 +615,8 @@ class MainWindow(QWidget):
                 topItem = Items[topIndex]
                 Items[topIndex] = tmpItem
                 Items[i] = topItem
-            # Display
-            Item = Items[i]
-            self.Table.SetRowItem(Item)
             i += 1
-        # Set last item
-        self.Table.SetRowItem(Items[-1])
+        return Items 
 
     def GetCountOfFilledFields(self, Item):
         filledCount = 0
@@ -547,12 +647,8 @@ class MainWindow(QWidget):
                 topItem = Items[topIndex]
                 Items[topIndex] = tmpItem
                 Items[i] = topItem
-            # Display
-            Item = Items[i]
-            self.Table.SetRowItem(Item)
             i += 1
-        # Set last item
-        self.Table.SetRowItem(Items[-1])
+        return Items
 
     def OnSortOrderBtnClick(self):
         self.sortOrder = DESC_ORDER if self.sortOrder == ASC_ORDER else ASC_ORDER
@@ -570,6 +666,10 @@ class MainWindow(QWidget):
     def CopySelectedValue(self):
         selItem = self.Table.selectedItems()[0]
         value = selItem.text()
+        if value.__contains__(encoder.PWD_MASK_CHAR):
+            # Get password
+            rowIndex = self.Table.currentRow()
+            value = self.GetPwdOfRow(rowIndex)
         pyperclip.copy(value)
 
     def FocusOnSearchInput(self):
@@ -600,6 +700,10 @@ class MainWindow(QWidget):
         if self.selSortOptionIndex == 0 or len(SearchResults) <= 1:
             for result in SearchResults:
                 self.Table.SetRowItem(result)
+            # Update pwd copy list
+            self.UpdateAccsCopyList(SearchResults)
+            if len(SearchResults) > 1:
+                self.ResetManualPwdVisCount()
         else:
             self.SortResults(results=SearchResults)
         # Select and focus on the first table item
@@ -719,6 +823,17 @@ class MainWindow(QWidget):
             e.ignore()
             self.hide()
         
+def Init():
+    global allPwdsVisibilityBool
+    allPwdsVisibilityBool = xmlHandler.GetPwdVisibilityOptionIndex()
+
+def GetAllPwdsVisibilityBool():
+    return allPwdsVisibilityBool
+
+def SetAllPwdsVisibilityBool(value):
+    global allPwdsVisibilityBool
+    allPwdsVisibilityBool = value
+
 def Create():
     global Window
     Window = MainWindow()

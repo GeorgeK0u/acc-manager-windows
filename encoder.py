@@ -1,4 +1,5 @@
 wrongChars = None
+PWD_MASK_CHAR = chr(0x25CF)
 
 def Init():
     global wrongChars
@@ -25,3 +26,9 @@ def Decrypt(text):
         dChar = chr(chAscii - wrongChars)
         decryptedText += dChar
     return decryptedText
+
+def MaskPassword(text):
+    maskedText = ''
+    for i in range(len(text)):
+        maskedText += PWD_MASK_CHAR
+    return maskedText

@@ -1,6 +1,6 @@
 import ctypes
 from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, QMessageBox, QShortcut, QLabel, QPushButton, QLineEdit, QCheckBox, QSpacerItem, QSizePolicy
+from PySide2.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, QMessageBox, QShortcut, QLabel, QPushButton, QLineEdit, QCheckBox, QComboBox, QSpacerItem, QSizePolicy
 from PySide2.QtGui import QKeySequence, QIcon
 # My files
 import xmlHandler
@@ -35,55 +35,65 @@ class SettingsWindow(QWidget):
             {
                 font-size: 11pt;
             }
-            
-            .lock-label
-            {
-                margin: 20px 10px 0 0;
-            }
 
-            .lock-input
+            .header
             {
-                margin-top: 20px;
-                width: 150px;
-                max-width: 150px;
-                height: 25px;
-                max-height: 25px;
-            }
-
-            .run-bg-checkbox
-            {
-                margin-top: 15px;
+                font-size: 14pt;
             }
         """)
-        SizePolicy = QSizePolicy()
-        # Prevent stretching to fill up all window available space
-        SizePolicy.setHorizontalPolicy(QSizePolicy.Fixed)
-        SizePolicy.setVerticalPolicy(QSizePolicy.Fixed)
+        FixedSizePolicy = QSizePolicy()
+        FixedSizePolicy.setHorizontalPolicy(QSizePolicy.Fixed)
+        FixedSizePolicy.setVerticalPolicy(QSizePolicy.Fixed)
+        # Security header
+        SecurityHeader = QLabel(parent=self, text='Security')
+        SecurityHeader.setProperty('class', 'header')
+        SecurityHeader.setSizePolicy(FixedSizePolicy)
+        # Lock app
         LockLbl = QLabel(parent=self, text='Lock code')
-        LockLbl.setProperty('class', 'lock-label')
-        LockLbl.setSizePolicy(SizePolicy)
-        LockInput = QLineEdit(parent=self)
-        LockInput.setProperty('class', 'lock-input')
-        LockInput.setObjectName('lock')
-        LockInput.setSizePolicy(SizePolicy)
-        LockInput.setPlaceholderText('None')
-        LockInput.setText(xmlHandler.GetLockCode())
-        RunOnBgCheckBox = QCheckBox(parent=self, text='Run on background')
-        RunOnBgCheckBox.setProperty('class', 'run-bg-checkbox')
-        RunOnBgCheckBox.setObjectName('run-bg')
-        RunOnBgCheckBox.setSizePolicy(SizePolicy)
+        LockLbl.setSizePolicy(FixedSizePolicy)
+        self.LockInput = QLineEdit(parent=self)
+        self.LockInput.setSizePolicy(FixedSizePolicy)
+        self.LockInput.setPlaceholderText('None')
+        lockCode = xmlHandler.GetLockCode()
+        self.LockInput.setText(lockCode)
+        # Default visibility for passwords
+        PwdVisibilityLbl = QLabel(parent=self, text='Passwords visibility')
+        PwdVisibilityLbl.setSizePolicy(FixedSizePolicy)
+        self.PwdVisibilityDropdown = QComboBox(parent=self)
+        self.PwdVisibilityDropdown.addItems(['Hide', 'Show'])
+        self.PwdVisibilityDropdown.setSizePolicy(FixedSizePolicy)
+        pwdVisibilityOptionIndex = xmlHandler.GetPwdVisibilityOptionIndex()
+        self.PwdVisibilityDropdown.setCurrentIndex(pwdVisibilityOptionIndex)
+        # Continue running on background
+        self.RunOnBgCheckBox = QCheckBox(parent=self, text='Run on background')
+        self.RunOnBgCheckBox.setSizePolicy(FixedSizePolicy)
         isRunOnBgEnabled = xmlHandler.GetRunOnBg()
-        RunOnBgCheckBox.setChecked(isRunOnBgEnabled)
+        self.RunOnBgCheckBox.setChecked(isRunOnBgEnabled)
         # Layout
+        # Lock layout
         LockLayout = QHBoxLayout()
-        LockLayout.setSpacing(0)
+        LockLayout.setAlignment(Qt.AlignLeft)
         LockLayout.addWidget(LockLbl)
-        LockLayout.addWidget(LockInput)
+        LockLayout.addWidget(self.LockInput)
+        # Pwd visibility layout
+        PwdVisibilityLayout = QHBoxLayout()
+        PwdVisibilityLayout.setAlignment(Qt.AlignLeft)
+        PwdVisibilityLayout.addWidget(PwdVisibilityLbl)
+        PwdVisibilityLayout.addWidget(self.PwdVisibilityDropdown)
+        # Security layout
+        SecurityLayout = QVBoxLayout()
+        SecurityLayout.setAlignment(Qt.AlignLeft)
+        SecurityLayout.addWidget(SecurityHeader)
+        SecurityLayout.addSpacing(10)
+        SecurityLayout.addLayout(LockLayout)
+        SecurityLayout.addSpacing(6)
+        SecurityLayout.addLayout(PwdVisibilityLayout)
+        # Window layout
         WindowLayout = QVBoxLayout()
-        WindowLayout.setAlignment(Qt.AlignTop)
-        WindowLayout.setSpacing(0)
-        WindowLayout.addLayout(LockLayout)
-        WindowLayout.addWidget(RunOnBgCheckBox)
+        WindowLayout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
+        WindowLayout.addLayout(SecurityLayout)
+        WindowLayout.addSpacing(20)
+        WindowLayout.addWidget(self.RunOnBgCheckBox)
         self.setLayout(WindowLayout)
         # Shortcuts
         CloseWindow = QShortcut(QKeySequence('Ctrl+W'), self)
@@ -91,17 +101,15 @@ class SettingsWindow(QWidget):
         CloseWindow.activated.connect(self.close)
 
     def UpdateSettings(self):
-        try:
-            # Lock
-            LockInput = self.findChild(QLineEdit, 'lock')
-            typedCode = LockInput.text()
-            xmlHandler.UpdateLockCode(typedCode)
-            # Run on bg
-            RunOnBgCheckBox = self.findChild(QCheckBox, 'run-bg')
-            state = RunOnBgCheckBox.isChecked()
-            xmlHandler.UpdateRunOnBgCheckBox(state)
-        except:
-            pass
+        # Lock
+        typedCode = self.LockInput.text()
+        xmlHandler.UpdateLockCode(typedCode)
+        # Pwd visibility
+        selIndex = self.PwdVisibilityDropdown.currentIndex()
+        xmlHandler.UpdatePwdVisibilityOptionIndex(selIndex)
+        # Run on bg
+        state = self.RunOnBgCheckBox.isChecked()
+        xmlHandler.UpdateRunOnBgCheckBox(state)
 
     def closeEvent(self, e):
         super().closeEvent(e)

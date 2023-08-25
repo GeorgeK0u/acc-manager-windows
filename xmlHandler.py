@@ -7,6 +7,7 @@ saveFileName = None
 xmlTree = None
 xmlRoot = None
 lockTagName = None
+pwdVisibilityTagName = None
 runOnBgTagName = None
 accTagName = None
 accNameTagName = None
@@ -14,11 +15,12 @@ extraInfoTagName = None
 pwdTagName = None
 
 def Init():
-    global saveFileName, xmlTree, xmlRoot, lockTagName, runOnBgTagName, accTagName, accNameTagName, extraInfoTagName, pwdTagName
+    global saveFileName, xmlTree, xmlRoot, lockTagName, pwdVisibilityTagName, runOnBgTagName, accTagName, accNameTagName, extraInfoTagName, pwdTagName
     saveFileName = 'Resources/save.xml'
     xmlTree = et.parse(saveFileName)
     xmlRoot = xmlTree.getroot()
     lockTagName = 'lock'
+    pwdVisibilityTagName = 'pwd-visibility'
     runOnBgTagName = 'run-on-bg'
     accTagName = 'account'
     accNameTagName = 'account-name'
@@ -43,6 +45,19 @@ def UpdateLockCode(nCode):
 
 def IsLocked():
     return GetLockCode() != None
+
+def GetPwdVisibilityOptionIndex():
+    pwdVisibilityTag = xmlRoot.find(pwdVisibilityTagName)
+    optionIndex = int(pwdVisibilityTag.text)
+    return optionIndex
+
+def UpdatePwdVisibilityOptionIndex(selIndex):
+    curIndex = GetPwdVisibilityOptionIndex()
+    if curIndex == selIndex:
+        return
+    pwdVisibilityTag = xmlRoot.find(pwdVisibilityTagName)
+    pwdVisibilityTag.text = str(selIndex)
+    Commit()
 
 def GetRunOnBg():
     runOnBgTag = xmlRoot.find(runOnBgTagName)

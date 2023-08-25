@@ -12,6 +12,7 @@ if __name__ == '__main__':
     encoder.Init()
     xmlHandler.Init()
     viewHandler.Init()
+    mainWindow.Init()
     addAcc.Init()
     if xmlHandler.IsLocked():
         login.Create()
