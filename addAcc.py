@@ -197,22 +197,22 @@ class AddAccWindow(QWidget):
         accName = self.AccNameInput.text()
         extraInfo = self.ExtraInfoInput.text()
         pwd = self.PwdInput.text()
+        # Empty acc name
+        if accName == '':
+            QMessageBox.critical(self, 'Not Added', 'The account name cannot be empty')
+            return
+        # Acc name already exists
         AccNames = xmlHandler.GetAccNames()
         if AccNames.__contains__(accName):
             QMessageBox.critical(self, 'Not Added', 'This account name already exists')
             return
+        # Add a dash char to empty fields
         AccDetails = [accName, extraInfo, pwd]
-        ok = False
         for i in range(len(AccDetails)): 
             field = AccDetails[i]
-            if field == '':
-                AccDetails[i] = '-'
+            if field != '':
                 continue
-            if not ok:
-                ok = True
-        if not ok:
-            QMessageBox.critical(self, 'Not Added', 'Fill at least 1 field')
-            return
+            AccDetails[i] = '-'
         accName = AccDetails[0]
         extraInfo = AccDetails[1]
         pwd = AccDetails[2]
