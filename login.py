@@ -1,27 +1,31 @@
-import ctypes
-from PySide2.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, QMessageBox, QShortcut, QLabel, QPushButton, QLineEdit, QSpacerItem, QSizePolicy
-from PySide2.QtGui import QKeySequence, QIcon
-# My files 
-import xmlHandler
-import viewHandler
-import mainWindow
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import QWidget, QLineEdit, QPushButton, QMessageBox, QHBoxLayout, QShortcut
+from PySide2.QtGui import QIcon, QKeySequence, QCursor
 
-Window = None
+from utils import xml_handler
+from utils import view_handler
+import main_window
 
-class LoginWindow(QWidget):
+_window = None
+
+class MyLineEdit(QLineEdit):
+    def focusInEvent(self, e):
+        super().focusInEvent(e)
+        # Set cursor at end
+        text_length = len(self.text())
+        self.setSelection(text_length, text_length)
+
+class _LoginWindow(QWidget):
     def __init__(self):
         super().__init__(parent=None)
-        self.InitUI()
+        self.init_ui()
 
-    def InitUI(self):
-        # Windows required to add the icon as the app taskbar icon
-        myappid = u'mycompany.myproduct.subproduct.version'
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    def init_ui(self):
         # Window properties 
-        # Icon
-        AppIcon = QIcon('./Resources/app-icon32.png')
-        self.setWindowIcon(AppIcon)
         self.setWindowTitle('Login')
+        # Icon
+        app_icon = QIcon(r'.\Resources\Icons\app-icon.png')
+        self.setWindowIcon(app_icon)
         # Size
         width = 300
         height = 120
@@ -30,45 +34,44 @@ class LoginWindow(QWidget):
         self.setMaximumSize(width, height)
         # Widgets
         # Code input
-        self.CodeInput = QLineEdit(parent=self)
-        self.CodeInput.setProperty('class', 'code-input')
-        self.CodeInput.setPlaceholderText('Code')
-        self.CodeInput.returnPressed.connect(self.Validate)
-        self.CodeInput.setFocus()
+        self.code_input = MyLineEdit(parent=self)
+        self.code_input.returnPressed.connect(self.validate)
+        self.code_input.setFocus()
         # Login btn 
-        self.LoginBtn = QPushButton(parent=self, text='Login')
-        self.LoginBtn.setProperty('class', 'login-btn')
+        self.login_btn = QPushButton(parent=self, text='Login')
         # Trigger enter key press as click 
-        self.LoginBtn.setDefault(True)
-        self.LoginBtn.clicked.connect(self.Validate)
+        self.login_btn.setDefault(True)
+        self.login_btn.clicked.connect(self.validate)
         # Set layout
-        self.Style()
+        self.style()
         # Shortcuts
-        CloseWindow = QShortcut(QKeySequence('Ctrl+W'), self)
-        CloseWindow.setAutoRepeat(False)
-        CloseWindow.activated.connect(self.close)
+        close_window_sc = QShortcut(QKeySequence('Ctrl+W'), self)
+        close_window_sc.setAutoRepeat(False)
+        close_window_sc.activated.connect(self.close)
 
-    def Style(self):
+    def style(self):
+        self.code_input.setPlaceholderText('Code')
+        self.login_btn.setCursor(QCursor(Qt.PointingHandCursor))
         # Layout
-        WindowLayout = QHBoxLayout()
-        WindowLayout.addWidget(self.CodeInput, stretch=2)
-        WindowLayout.addWidget(self.LoginBtn, stretch=1)
-        self.setLayout(WindowLayout)
+        window_layout = QHBoxLayout()
+        window_layout.addWidget(self.code_input, stretch=2)
+        window_layout.addWidget(self.login_btn, stretch=1)
+        self.setLayout(window_layout)
 
-    def Validate(self):
-        corCode = xmlHandler.GetLockCode()
-        typedCode = self.CodeInput.text()
-        if (typedCode != corCode):
+    def validate(self):
+        cur_code = xml_handler.get_lock_code()
+        typed_code = self.code_input.text()
+        # Incorrect code
+        if typed_code != cur_code:
             QMessageBox.critical(self, 'Error', 'Incorrect code')
             return
-        # Code is correct 
-        # Show main window
-        MainWindow = mainWindow.Create()
-        viewHandler.OnLogin(windowRef=MainWindow)
+        # Correct code
+        main_window_ref = main_window.create()
+        view_handler.on_login(main_window_ref)
         # Close login window
         self.close()
 
-def Create():
-    global Window
-    Window = LoginWindow()
-    Window.show()
+def create():
+    global _window
+    _window = _LoginWindow()
+    _window.show()
