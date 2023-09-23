@@ -1,8 +1,10 @@
-venv
+.venv
 __pycache__
 build
 dist
 main.spec
 readme.md
-log.txt
+Logs
 Resources
+Server
+debug.py
