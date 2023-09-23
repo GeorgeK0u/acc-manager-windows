@@ -4,7 +4,7 @@ build
 dist
 main.spec
 readme.md
-Logs
 Resources
+Logs
 Server
 debug.py
