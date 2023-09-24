@@ -9,10 +9,11 @@ _window = None
 
 class MyLineEdit(QLineEdit):
     def focusInEvent(self, e):
+        # Get cursor position before the focus-in event overrides it
+        cursor_pos = self.cursorPosition()
         super().focusInEvent(e)
-        # Set cursor at end
-        text_length = len(self.text())
-        self.setSelection(text_length, text_length)
+        # Remove default select all on focus
+        self.setCursorPosition(cursor_pos)
 
 class _SettingsWindow(QWidget):
     def __init__(self):

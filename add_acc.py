@@ -15,10 +15,11 @@ _gen_pwd_characters = None
 
 class MyLineEdit(QLineEdit):
     def focusInEvent(self, e):
+        # Get cursor position before the focus-in event overrides it
+        cursor_pos = self.cursorPosition()
         super().focusInEvent(e)
         # Remove default select all on focus
-        text_length = len(self.text())
-        self.setSelection(text_length, text_length)
+        self.setCursorPosition(cursor_pos)
 
     def keyPressEvent(self, e):
         # Copy selection (PySide prevents copying masked pwd)

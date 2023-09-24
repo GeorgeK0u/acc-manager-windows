@@ -25,6 +25,14 @@ _window = None
 _sort_col_index = None
 _all_pwds_vis_bool = None
 
+class MyLineEdit(QLineEdit):
+    def focusInEvent(self, e):
+        # Get cursor position before the focus-in event overrides it
+        cursor_pos = self.cursorPosition()
+        super().focusInEvent(e)
+        # Remove default select all on focus
+        self.setCursorPosition(cursor_pos)
+
 class _TableHeaderWidget(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
@@ -354,16 +362,12 @@ class _MainWindow(QWidget):
             self.showMaximized()
         # Widgets
         # Search input
-        self.search_input = QLineEdit(parent=self)
-        self.search_input.returnPressed.connect(self.update_search_results)
+        self.search_input = MyLineEdit(parent=self)
+        self.search_input.textChanged.connect(self.update_search_results)
         self.search_input.setFocus()
-        # Search btn
-        self.search_btn = QPushButton(parent=self)
-        # Trigger enter press as click
-        self.search_btn.setDefault(True)
-        self.search_btn.clicked.connect(self.update_search_results)
         # Search match case checkbox
         self.search_match_case_checkbox = QCheckBox(parent=self, text='Match case')
+        self.search_match_case_checkbox.clicked.connect(self.update_search_results)
         # Display sort dropdown menu
         self.sort_results_lbl = QLabel(parent=self, text='Sort results')
         self.sort_results_dropdown = QComboBox(parent=self)
@@ -520,13 +524,6 @@ class _MainWindow(QWidget):
         self.search_input.setMinimumWidth(200)
         self.search_input.setFixedHeight(30)
         self.search_input.setPlaceholderText('Search')
-        # Search btn
-        self.search_btn.setProperty('class', 'search-btn')
-        self.search_btn.setSizePolicy(fixed_size_policy)
-        self.search_btn.setFixedSize(24, 24)
-        self.search_btn.setIcon(QIcon(r'.\Resources\Icons\search-button-icon.png'))
-        self.search_btn.setIconSize(QSize(24, 24))
-        self.search_btn.setCursor(QCursor(Qt.PointingHandCursor))
         # Search match case checkbox
         self.search_match_case_checkbox.setSizePolicy(fixed_size_policy)
         # Sort widgets 
@@ -601,8 +598,6 @@ class _MainWindow(QWidget):
         top_layout.setAlignment(Qt.AlignLeft)
         top_layout.setContentsMargins(0, 0, 0, 10)
         top_layout.addWidget(self.search_input)
-        top_layout.addWidget(self.search_btn)
-        top_layout.addSpacing(6)
         top_layout.addWidget(self.search_match_case_checkbox)
         top_layout.addLayout(sort_layout)
         # Push to the screen width end
@@ -941,21 +936,12 @@ class _MainWindow(QWidget):
                 self.reset_manual_pwd_vis_count()
         else:
             self.sort_results(search_results)
-        # Select and focus on the first table item
         if len(search_results) > 0:
             # Remove no accs header
             self.set_no_accs_header_vis(visible=False)
-            # Focus on table
-            self.table.setFocus()
-            first_item = self.table.item(0, 0)
-            # Focus on item
-            self.table.setCurrentItem(first_item)
-            # Select item
-            self.table.setItemSelected(first_item, True)
         else:
             # Show no accs header
             self.set_no_accs_header_vis(text='No search results', visible=True)
-            self.search_input.setFocus()
 
     def show_table_right_click_menu(self, pos):
         menu = QMenu()
