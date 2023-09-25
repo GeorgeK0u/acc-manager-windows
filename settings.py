@@ -1,5 +1,5 @@
 from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QComboBox, QSpinBox, QCheckBox, QVBoxLayout, QHBoxLayout, QSizePolicy, QShortcut
+from PySide2.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QComboBox, QSpinBox, QCheckBox, QTabWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QShortcut
 from PySide2.QtGui import QIcon, QKeySequence
 
 from utils import xml_handler
@@ -32,15 +32,67 @@ class _SettingsWindow(QWidget):
         self.setFixedSize(width, height)
         self.setWindowTitle('Settings')
         # Widgets
+        self.tabs = QTabWidget(parent=self)
+        self.tabs.setTabsClosable(False)
+        # General tab
+        self.general_tab = QWidget(parent=self.tabs)
+        # Continue running on background
+        self.run_on_bg_checkbox = QCheckBox(parent=self.general_tab, text='Run on background')
+        run_on_bg = xml_handler.get_run_on_bg()
+        self.run_on_bg_checkbox.setChecked(run_on_bg)
+        # Add tab
+        self.tabs.addTab(self.general_tab, 'General') 
+        # Security tab
+        self.security_tab = QWidget(parent=self.tabs)
+        # Lock lbl
+        self.lock_lbl = QLabel(parent=self.security_tab, text='Set lock code')
+        # Lock input
+        self.lock_input = MyLineEdit(parent=self.security_tab)
+        self.lock_input.setPlaceholderText('Not locked')
+        lockCode = xml_handler.get_lock_code()
+        self.lock_input.setText(lockCode)
+        # Default visibility for passwords
+        self.pwd_vis_lbl = QLabel(parent=self.security_tab, text='Password visibility')
+        self.pwd_vis_dropdown = QComboBox(parent=self.security_tab)
+        self.pwd_vis_dropdown.addItems(['Hide', 'Show'])
+        pwd_vis_option_index = xml_handler.get_pwd_vis_option_index()
+        self.pwd_vis_dropdown.setCurrentIndex(pwd_vis_option_index)
+        # Add tab
+        self.tabs.addTab(self.security_tab, 'Security')
+        # # Password generation tab
+        self.pwd_gen_tab = QWidget(parent=self.tabs)
+        # Min len
+        self.gen_pwd_min_len_lbl = QLabel(parent=self.pwd_gen_tab, text='Min length')
+        self.gen_pwd_min_len_spinbox = QSpinBox(parent=self.pwd_gen_tab)
+        self.gen_pwd_min_len_spinbox.setMinimum(xml_handler.MIN_POSSIBLE_GEN_PWD_LEN)
+        self.gen_pwd_min_len_spinbox.setMaximum(xml_handler.MAX_POSSIBLE_GEN_PWD_LEN)
+        min_pwd_len = xml_handler.get_gen_pwd_min_len()
+        self.gen_pwd_min_len_spinbox.setValue(min_pwd_len)
+        # Max len
+        self.gen_pwd_max_len_lbl = QLabel(parent=self.pwd_gen_tab, text='Max length')
+        self.gen_pwd_max_len_spinbox = QSpinBox(parent=self.pwd_gen_tab)
+        self.gen_pwd_max_len_spinbox.setMinimum(xml_handler.MIN_POSSIBLE_GEN_PWD_LEN)
+        self.gen_pwd_max_len_spinbox.setMaximum(xml_handler.MAX_POSSIBLE_GEN_PWD_LEN)
+        max_pwd_len = xml_handler.get_gen_pwd_max_len()
+        self.gen_pwd_max_len_spinbox.setValue(max_pwd_len)
+        # Reset gen pwd len btn
+        self.gen_pwd_reset_len_btn = QPushButton(parent=self.pwd_gen_tab, text='Reset')
+        self.gen_pwd_reset_len_btn.setProperty('class', 'gen-pwd-reset-btn')
+        self.gen_pwd_reset_len_btn.clicked.connect(self.reset_gen_pwd_len)
+        # Add tab
+        self.tabs.addTab(self.pwd_gen_tab, 'Password generation')
+        # Style window
+        self.style()
+        # Shortcuts
+        close_window_sc = QShortcut(QKeySequence('Ctrl+W'), self)
+        close_window_sc.setAutoRepeat(False)
+        close_window_sc.activated.connect(self.close)
+
+    def style(self):
         self.setStyleSheet("""
             *
             {
                 font-size: 11pt;
-            }
-
-            .header
-            {
-                font-size: 14pt;
             }
 
             .gen-pwd-reset-btn
@@ -51,125 +103,79 @@ class _SettingsWindow(QWidget):
         fixed_size_policy = QSizePolicy()
         fixed_size_policy.setHorizontalPolicy(QSizePolicy.Fixed)
         fixed_size_policy.setVerticalPolicy(QSizePolicy.Fixed)
-        # Security header
-        security_header = QLabel(parent=self, text='Security')
-        security_header.setProperty('class', 'header')
-        security_header.setSizePolicy(fixed_size_policy)
-        # Security section
-        # Lock app
-        lock_lbl = QLabel(parent=self, text='Set lock code')
-        lock_lbl.setSizePolicy(fixed_size_policy)
-        self.lock_input = MyLineEdit(parent=self)
+        # Tabs
+        tabs_size_policy = QSizePolicy()
+        tabs_size_policy.setHorizontalPolicy(QSizePolicy.Expanding)
+        tabs_size_policy.setVerticalPolicy(QSizePolicy.Fixed)
+        self.tabs.setSizePolicy(tabs_size_policy)
+        self.tabs.setFixedHeight(150)
+        # General tab
+        # Run on bg checkbox
+        self.run_on_bg_checkbox.setSizePolicy(fixed_size_policy)
+        # Add widgets to tab 
+        general_tab_layout = QVBoxLayout()
+        general_tab_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
+        general_tab_layout.addWidget(self.run_on_bg_checkbox)
+        self.general_tab.setLayout(general_tab_layout)
+        # Security tab
+        # Lock lbl
+        self.lock_lbl.setSizePolicy(fixed_size_policy)
+        # Lock input
         self.lock_input.setSizePolicy(fixed_size_policy)
-        self.lock_input.setPlaceholderText('Not locked')
-        lockCode = xml_handler.get_lock_code()
-        self.lock_input.setText(lockCode)
-        # Default visibility for passwords
-        pwd_vis_lbl = QLabel(parent=self, text='Password visibility')
-        pwd_vis_lbl.setSizePolicy(fixed_size_policy)
-        self.pwd_vis_dropdown = QComboBox(parent=self)
-        self.pwd_vis_dropdown.addItems(['Hide', 'Show'])
+        # Pwd vis lbl
+        self.pwd_vis_lbl.setSizePolicy(fixed_size_policy)
+        # Pwd vis dropdown
         self.pwd_vis_dropdown.setSizePolicy(fixed_size_policy)
-        pwd_vis_option_index = xml_handler.get_pwd_vis_option_index()
-        self.pwd_vis_dropdown.setCurrentIndex(pwd_vis_option_index)
-        # Password generation section
-        gen_pwd_header = QLabel(parent=self, text='Password Generation')
-        gen_pwd_header.setProperty('class', 'header')
-        gen_pwd_header.setSizePolicy(fixed_size_policy)
-        # Min len
-        gen_pwd_min_len_lbl = QLabel(parent=self, text='Min length')
-        gen_pwd_min_len_lbl.setSizePolicy(fixed_size_policy)
-        self.gen_pwd_min_len_spinbox = QSpinBox(parent=self)
+        # Add widgets to tab
+        security_tab_layout = QVBoxLayout() 
+        security_tab_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
+        security_tab_lock_layout = QHBoxLayout()
+        security_tab_lock_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
+        security_tab_lock_layout.addWidget(self.lock_lbl)
+        security_tab_lock_layout.addWidget(self.lock_input)
+        security_tab_layout.addLayout(security_tab_lock_layout)
+        security_tab_pwd_vis_layout = QHBoxLayout()
+        security_tab_pwd_vis_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
+        security_tab_pwd_vis_layout.addWidget(self.pwd_vis_lbl)
+        security_tab_pwd_vis_layout.addWidget(self.pwd_vis_dropdown)
+        security_tab_layout.addLayout(security_tab_pwd_vis_layout)
+        self.security_tab.setLayout(security_tab_layout)
+        # Pwd generation tab
+        # Gen min len
+        self.gen_pwd_min_len_lbl.setSizePolicy(fixed_size_policy)
         self.gen_pwd_min_len_spinbox.setSizePolicy(fixed_size_policy)
         self.gen_pwd_min_len_spinbox.setFixedWidth(65)
         self.gen_pwd_min_len_spinbox.setFixedHeight(30)
-        self.gen_pwd_min_len_spinbox.setMinimum(xml_handler.MIN_POSSIBLE_GEN_PWD_LEN)
-        self.gen_pwd_min_len_spinbox.setMaximum(xml_handler.MAX_POSSIBLE_GEN_PWD_LEN)
-        min_pwd_len = xml_handler.get_gen_pwd_min_len()
-        self.gen_pwd_min_len_spinbox.setValue(min_pwd_len)
-        # Max len
-        gen_pwd_max_len_lbl = QLabel(parent=self, text='Max length')
-        gen_pwd_max_len_lbl.setSizePolicy(fixed_size_policy)
-        self.gen_pwd_max_len_spinbox = QSpinBox(parent=self)
+        # Gen max len
+        self.gen_pwd_max_len_lbl.setSizePolicy(fixed_size_policy)
         self.gen_pwd_max_len_spinbox.setSizePolicy(fixed_size_policy)
         self.gen_pwd_max_len_spinbox.setFixedWidth(65)
         self.gen_pwd_max_len_spinbox.setFixedHeight(30)
-        self.gen_pwd_max_len_spinbox.setMinimum(xml_handler.MIN_POSSIBLE_GEN_PWD_LEN)
-        self.gen_pwd_max_len_spinbox.setMaximum(xml_handler.MAX_POSSIBLE_GEN_PWD_LEN)
-        max_pwd_len = xml_handler.get_gen_pwd_max_len()
-        self.gen_pwd_max_len_spinbox.setValue(max_pwd_len)
         # Reset gen pwd len btn
-        gen_pwd_reset_len_btn = QPushButton(parent=self, text='Reset')
-        gen_pwd_reset_len_btn.setProperty('class', 'gen-pwd-reset-btn')
-        gen_pwd_reset_len_btn.setSizePolicy(fixed_size_policy)
-        gen_pwd_reset_len_btn.setFixedWidth(gen_pwd_reset_len_btn.width()-50)
-        gen_pwd_reset_len_btn.setFixedHeight(30)
-        gen_pwd_reset_len_btn.setDefault(True)
-        gen_pwd_reset_len_btn.clicked.connect(self.reset_gen_pwd_len)
-        # General section
-        general_header = QLabel(parent=self, text='General')
-        general_header.setProperty('class', 'header')
-        general_header.setSizePolicy(fixed_size_policy)
-        # Continue running on background
-        self.run_on_bg_checkbox = QCheckBox(parent=self, text='Run on background')
-        self.run_on_bg_checkbox.setSizePolicy(fixed_size_policy)
-        run_on_bg = xml_handler.get_run_on_bg()
-        self.run_on_bg_checkbox.setChecked(run_on_bg)
-        # Layout
-        # Security layout
-        security_layout = QVBoxLayout()
-        security_layout.setAlignment(Qt.AlignLeft)
-        security_layout.addWidget(security_header)
-        # Lock layout
-        lock_layout = QHBoxLayout()
-        lock_layout.setAlignment(Qt.AlignLeft)
-        lock_layout.addWidget(lock_lbl)
-        lock_layout.addWidget(self.lock_input)
-        # Pwd visibility layout
-        pwd_vis_layout = QHBoxLayout()
-        pwd_vis_layout.setAlignment(Qt.AlignLeft)
-        pwd_vis_layout.addWidget(pwd_vis_lbl)
-        pwd_vis_layout.addWidget(self.pwd_vis_dropdown)
-        security_layout.addLayout(lock_layout)
-        security_layout.addSpacing(6)
-        security_layout.addLayout(pwd_vis_layout)
-        # Pwd gen layout
-        gen_pwd_layout = QVBoxLayout()
-        gen_pwd_layout.addWidget(gen_pwd_header)
-        # Pwd gen len layout
-        gen_pwd_len_layout = QHBoxLayout()
-        gen_pwd_len_layout.setAlignment(Qt.AlignLeft)
-        # Pwd gen min len layout
-        gen_pwd_min_len_layout = QHBoxLayout()
-        gen_pwd_min_len_layout.addWidget(gen_pwd_min_len_lbl)
-        gen_pwd_min_len_layout.addWidget(self.gen_pwd_min_len_spinbox)
-        # Pwd gen max len layout
-        gen_pwd_max_len_layout = QHBoxLayout()
-        gen_pwd_max_len_layout.addWidget(gen_pwd_max_len_lbl)
-        gen_pwd_max_len_layout.addWidget(self.gen_pwd_max_len_spinbox)
-        gen_pwd_len_layout.addLayout(gen_pwd_min_len_layout)
-        gen_pwd_len_layout.addSpacing(20)
-        gen_pwd_len_layout.addLayout(gen_pwd_max_len_layout)
-        gen_pwd_len_layout.addSpacing(10)
-        gen_pwd_len_layout.addWidget(gen_pwd_reset_len_btn)
-        gen_pwd_layout.addLayout(gen_pwd_len_layout)
-        # General layout
-        general_layout = QVBoxLayout()
-        general_layout.addWidget(general_header)
-        general_layout.addWidget(self.run_on_bg_checkbox)
+        self.gen_pwd_reset_len_btn.setSizePolicy(fixed_size_policy)
+        self.gen_pwd_reset_len_btn.setFixedWidth(self.gen_pwd_reset_len_btn.width()-50)
+        self.gen_pwd_reset_len_btn.setFixedHeight(30)
+        self.gen_pwd_reset_len_btn.setDefault(True)
+        # Add widgets to tab
+        pwd_gen_tab_layout = QVBoxLayout()
+        pwd_gen_tab_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
+        pwd_gen_tab_min_len_layout = QHBoxLayout()
+        pwd_gen_tab_min_len_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
+        pwd_gen_tab_min_len_layout.addWidget(self.gen_pwd_min_len_lbl)
+        pwd_gen_tab_min_len_layout.addWidget(self.gen_pwd_min_len_spinbox)
+        pwd_gen_tab_layout.addLayout(pwd_gen_tab_min_len_layout)
+        pwd_gen_tab_max_len_layout = QHBoxLayout()
+        pwd_gen_tab_max_len_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
+        pwd_gen_tab_max_len_layout.addWidget(self.gen_pwd_max_len_lbl)
+        pwd_gen_tab_max_len_layout.addWidget(self.gen_pwd_max_len_spinbox)
+        pwd_gen_tab_layout.addLayout(pwd_gen_tab_max_len_layout)
+        pwd_gen_tab_layout.addWidget(self.gen_pwd_reset_len_btn)
+        self.pwd_gen_tab.setLayout(pwd_gen_tab_layout)
         # Window layout
         window_layout = QVBoxLayout()
         window_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
-        window_layout.addLayout(security_layout)
-        window_layout.addSpacing(20)
-        window_layout.addLayout(gen_pwd_layout)
-        window_layout.addSpacing(20)
-        window_layout.addLayout(general_layout)
+        window_layout.addWidget(self.tabs)
         self.setLayout(window_layout)
-        # Shortcuts
-        close_window_sc = QShortcut(QKeySequence('Ctrl+W'), self)
-        close_window_sc.setAutoRepeat(False)
-        close_window_sc.activated.connect(self.close)
 
     def reset_gen_pwd_len(self):
         # Min len
@@ -184,6 +190,10 @@ class _SettingsWindow(QWidget):
             self.gen_pwd_max_len_spinbox.setValue(default_max_gen_pwd_len)
 
     def update_settings(self):
+        # General section
+        # Run on bg
+        state = self.run_on_bg_checkbox.isChecked()
+        xml_handler.update_run_on_bg(state)
         # Security section
         # Lock
         typed_code = self.lock_input.text()
@@ -196,10 +206,6 @@ class _SettingsWindow(QWidget):
         typed_gen_pwd_max_len = self.gen_pwd_max_len_spinbox.value()
         if typed_gen_pwd_min_len <= typed_gen_pwd_max_len:
             xml_handler.update_gen_pwd_len(typed_gen_pwd_min_len, typed_gen_pwd_max_len)
-        # General section
-        # Run on bg
-        state = self.run_on_bg_checkbox.isChecked()
-        xml_handler.update_run_on_bg(state)
 
     def closeEvent(self, e):
         super().closeEvent(e)
@@ -215,4 +221,3 @@ def create():
         return
     _window = _SettingsWindow()
     _window.show()
-    _window.setFocus()
