@@ -2,6 +2,7 @@ import json
 
 _wrong_chars = None
 PWD_MASK_CHAR = chr(0x25CF)
+PWD_MASK_CHAR_LEN = 12
 
 def init():
     global _wrong_chars
@@ -25,7 +26,7 @@ def decrypt(text):
 
 def mask_pwd(text):
     masked_text = ''
-    for _ in range(len(text)):
+    for _ in range(PWD_MASK_CHAR_LEN):
         masked_text += PWD_MASK_CHAR
     return masked_text
 
