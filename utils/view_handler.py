@@ -54,7 +54,13 @@ def remove_child_window_ref(window_ref):
     _child_windows.remove(window_ref)
 
 def on_exit():
-    client.send_close_socket_msg()
+    def send_close_msg():
+        client.send_close_socket_msg()
+    # Thread is needed (on public conn), because I cannot know if the port is open
+    # and the socket msg sending will implicitly stay on wait, until the timeout exception occurs
+    from threading import Thread
+    close_thread = Thread(target=send_close_msg)
+    close_thread.start()
 
 # DEBUG
 def set_conn_text(value):
