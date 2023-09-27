@@ -45,7 +45,7 @@ def create_conn():
     def listen():
         global _conn, _is_main_thread_alive
         try:
-            server_local_ip = '192.168.2.105'
+            server_local_ip = 'localhost'
             public_ip = ''
             try:
                 public_ip = requests.get('https://api.ipify.org').text
@@ -55,7 +55,8 @@ def create_conn():
                 view_handler.set_conn_text('Not connected')
                 return
             server_public_ip = socket.gethostbyname('my-ddns.ddns.net')
-            local_conn = public_ip == server_public_ip
+            # local_conn = public_ip == server_public_ip
+            local_conn = True
             host = ''
             if local_conn:
                 # Check if the server is running
