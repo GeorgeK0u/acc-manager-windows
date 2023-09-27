@@ -1,5 +1,5 @@
 from PySide2.QtCore import Qt, QSize
-from PySide2.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QGroupBox, QSlider, QMessageBox, QHBoxLayout, QVBoxLayout, QSizePolicy, QShortcut
+from PySide2.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QGroupBox, QSlider, QCheckBox, QMessageBox, QHBoxLayout, QVBoxLayout, QSizePolicy, QShortcut
 from PySide2.QtGui import QIcon, QKeySequence, QCursor, QClipboard
 
 import random
@@ -188,6 +188,24 @@ class _EditAccWindow(QWidget):
         self.gen_def_pwd_len_slider.setPageStep(5)
         def_pwd_len = xml_handler.get_gen_def_pwd_len()
         self.gen_def_pwd_len_slider.setValue(def_pwd_len)
+        # Char list group checkboxes
+        # Uppercase
+        gen_upper_chars_cbx = QCheckBox(parent=self, text='A-Z')
+        gen_upper_chars_cbx.setChecked(True)
+        gen_upper_chars_cbx.stateChanged.connect(self.on_char_group_cbx_state_change)
+        # Lowercase
+        gen_lower_chars_cbx = QCheckBox(parent=self, text='a-z')
+        gen_lower_chars_cbx.setChecked(True)
+        gen_lower_chars_cbx.stateChanged.connect(self.on_char_group_cbx_state_change)
+        # Number
+        gen_number_chars_cbx = QCheckBox(parent=self, text='0-9')
+        gen_number_chars_cbx.setChecked(True)
+        gen_number_chars_cbx.stateChanged.connect(self.on_char_group_cbx_state_change)
+        # Special
+        gen_special_chars_cbx = QCheckBox(parent=self, text='(!, #, $)')
+        gen_special_chars_cbx.setChecked(True)
+        gen_special_chars_cbx.stateChanged.connect(self.on_char_group_cbx_state_change)
+        self.char_group_cbx_list = [gen_upper_chars_cbx, gen_lower_chars_cbx, gen_number_chars_cbx, gen_special_chars_cbx]
         # Generate pwd btn
         self.gen_btn = QPushButton(parent=self.gen_menu, text='Generate')
         # Trigger enter key as click 
@@ -282,6 +300,9 @@ class _EditAccWindow(QWidget):
         self.gen_def_pwd_len_lbl.setSizePolicy(fixed_size_policy)
         self.gen_def_pwd_len_slider.setFixedWidth(200)
         self.gen_def_pwd_len_slider.setCursor(Qt.CursorShape.PointingHandCursor)
+        # Char list group checkboxes
+        for char_group_cbx in self.char_group_cbx_list:
+            char_group_cbx.setSizePolicy(fixed_size_policy)
         # Gen btn
         self.gen_btn.setProperty('class', 'gen-pwd-btn')
         self.gen_btn.setSizePolicy(fixed_size_policy)
@@ -311,6 +332,13 @@ class _EditAccWindow(QWidget):
         gen_def_pwd_len_layout.addWidget(self.gen_def_pwd_len_lbl)
         gen_def_pwd_len_layout.addWidget(self.gen_def_pwd_len_slider)
         gen_menu_layout.addLayout(gen_def_pwd_len_layout)
+        # Char list group checkbox layout
+        gen_char_group_cbx_layout = QHBoxLayout()
+        gen_char_group_cbx_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
+        for char_group_cbx in self.char_group_cbx_list:
+            gen_char_group_cbx_layout.addWidget(char_group_cbx)
+        gen_menu_layout.addLayout(gen_char_group_cbx_layout)
+        # Gen btn
         gen_menu_layout.addWidget(self.gen_btn)
         self.gen_menu.setLayout(gen_menu_layout)
         # Window layout
@@ -334,13 +362,56 @@ class _EditAccWindow(QWidget):
         icon_path = r'.\Resources\Icons\hide-pwd-icon.png' if show_pwd else r'.\Resources\Icons\show-pwd-icon.png'
         self.pwd_vis_toggle_btn.setIcon(QIcon(icon_path))
 
+    def get_only_checked_char_group_cbx(self):
+        only_cbx_checked = None
+        for char_group_cbx in self.char_group_cbx_list:
+            if not char_group_cbx.isChecked():
+                continue
+            if only_cbx_checked != None:
+                return
+            only_cbx_checked = char_group_cbx
+        return only_cbx_checked
+
+    def get_char_group_cbx_checked_count(self):
+        checked_count = 0
+        for char_group_cbx in self.char_group_cbx_list:
+            if not char_group_cbx.isChecked():
+                continue
+            checked_count += 1
+        return checked_count
+
+    def on_char_group_cbx_state_change(self, value):
+        if value == 0:
+            # Prevent last checkbox from being unchecked
+            only_cbx_checked = self.get_only_checked_char_group_cbx()
+            if not only_cbx_checked:
+                return
+            # Disable it
+            only_cbx_checked.setEnabled(False)
+        else:
+            checked_count = self.get_char_group_cbx_checked_count()
+            if checked_count != 2:
+                return
+            # Undo disabled checkbox
+            for char_group_cbx in self.char_group_cbx_list:
+                if char_group_cbx.isEnabled(): 
+                    continue
+                char_group_cbx.setEnabled(True)
+                break
+
     def gen_pwd(self):
         pwd_len = self.gen_def_pwd_len_slider.value()
         pwd = ''
+        sel_char_group_list = []
+        for i in range(len(self.char_group_cbx_list)):
+            char_group_cbx = self.char_group_cbx_list[i]
+            if not char_group_cbx.isChecked():
+                continue
+            sel_char_group_list.append(_gen_pwd_characters[i])
         for _ in range(pwd_len):
-            arr_index = random.randrange(0, len(_gen_pwd_characters))
-            ch_arr = _gen_pwd_characters[arr_index]
-            ch = chr(random.randint(ch_arr[0], ch_arr[1])) if (len(ch_arr) == 2) else ch_arr[random.randint(0, len(ch_arr) - 1)]
+            list_index = random.randrange(len(sel_char_group_list))
+            char_list = sel_char_group_list[list_index]
+            ch = chr(random.randint(char_list[0], char_list[1])) if type(char_list[0]) == int else char_list[random.randrange(len(char_list))]
             pwd += ch
         # Check if password already exists 
         pwds = xml_handler.get_acc_pwds() 
