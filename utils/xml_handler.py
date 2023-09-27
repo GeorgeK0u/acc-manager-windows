@@ -17,8 +17,7 @@ MIN_POSSIBLE_GEN_PWD_LEN = 1
 MAX_POSSIBLE_GEN_PWD_LEN = 50
 _gen_pwd_section_tag_name = None
 _gen_pwd_section_tag = None
-_gen_pwd_min_len_tag_name = None
-_gen_pwd_max_len_tag_name = None
+_gen_def_pwd_len_tag_name = None
 # General section
 _general_section_tag_name = None
 _general_section_tag = None
@@ -48,11 +47,10 @@ def init():
     _lock_code_tag_name = 'lock-code'
     _pwd_vis_tag_name = 'pwd-visibility'
     # Password generation section
-    global _gen_pwd_section_tag_name, _gen_pwd_section_tag, _gen_pwd_min_len_tag_name, _gen_pwd_max_len_tag_name
+    global _gen_pwd_section_tag_name, _gen_pwd_section_tag, _gen_def_pwd_len_tag_name
     _gen_pwd_section_tag_name = 'gen-pwd-section'
     _gen_pwd_section_tag = _root.find(_gen_pwd_section_tag_name)
-    _gen_pwd_min_len_tag_name = 'gen-pwd-min-len'
-    _gen_pwd_max_len_tag_name = 'gen-pwd-max-len'
+    _gen_def_pwd_len_tag_name = 'gen-def-pwd-len'
     # General section
     global _general_section_tag_name, _general_section_tag, _run_on_bg_tag_name, _last_window_state_tag_name
     _general_section_tag_name = 'general-section'
@@ -104,31 +102,18 @@ def update_pwd_vis_option_index(sel_index):
     _commit()
 
 # Password generation section
-def get_gen_pwd_min_len():
-    gen_min_len_tag = _gen_pwd_section_tag.find(_gen_pwd_min_len_tag_name)
-    enc_min_len = gen_min_len_tag.text
-    min_len = int(cryptor.decrypt(enc_min_len))
-    return min_len
+def get_gen_def_pwd_len():
+    gen_def_pwd_len_tag = _gen_pwd_section_tag.find(_gen_def_pwd_len_tag_name)
+    enc_def_pwd_len = gen_def_pwd_len_tag.text
+    def_pwd_len = int(cryptor.decrypt(enc_def_pwd_len))
+    return def_pwd_len
 
-def get_gen_pwd_max_len():
-    gen_max_len_tag = _gen_pwd_section_tag.find(_gen_pwd_max_len_tag_name)
-    enc_max_len = gen_max_len_tag.text
-    max_len = int(cryptor.decrypt(enc_max_len))
-    return max_len
-
-def update_gen_pwd_len(sel_min_len, sel_max_len):
-    # Min len
-    cur_min_len = get_gen_pwd_min_len()
-    if cur_min_len != sel_min_len:
-        gen_pwd_min_len_tag = _gen_pwd_section_tag.find(_gen_pwd_min_len_tag_name)
-        sel_min_len = str(sel_min_len)
-        gen_pwd_min_len_tag.text = cryptor.encrypt(sel_min_len) 
-    # Max len
-    cur_max_len = get_gen_pwd_max_len()
-    if cur_max_len != sel_max_len:
-        gen_pwd_max_len_tag = _gen_pwd_section_tag.find(_gen_pwd_max_len_tag_name)
-        sel_max_len = str(sel_max_len)
-        gen_pwd_max_len_tag.text = cryptor.encrypt(sel_max_len)
+def update_gen_def_pwd_len(sel_def_len):
+    cur_def_len = get_gen_def_pwd_len()
+    if cur_def_len == sel_def_len:
+        return
+    gen_def_pwd_len_tag = _gen_pwd_section_tag.find(_gen_def_pwd_len_tag_name)
+    gen_def_pwd_len_tag.text = cryptor.encrypt(str(sel_def_len)) 
     _commit()
 
 # General section

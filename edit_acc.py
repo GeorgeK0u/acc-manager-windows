@@ -1,5 +1,5 @@
 from PySide2.QtCore import Qt, QSize
-from PySide2.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QGroupBox, QSpinBox, QMessageBox, QHBoxLayout, QVBoxLayout, QSizePolicy, QShortcut
+from PySide2.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QGroupBox, QSlider, QMessageBox, QHBoxLayout, QVBoxLayout, QSizePolicy, QShortcut
 from PySide2.QtGui import QIcon, QKeySequence, QCursor, QClipboard
 
 import random
@@ -82,6 +82,62 @@ class _OptionMenu(QWidget):
         self.arrow_btn.setText('V' if self.is_menu_visible else '>')
         self.sub_menu.setVisible(self.is_menu_visible)
 
+class _MySlider(QWidget):
+    def __init__(self, parent, orientation):
+        super().__init__(parent)
+        self.orientation = orientation
+        self.init_ui()
+
+    def init_ui(self):
+        self.value_lbl = QLabel(parent=self)
+        self.slider = QSlider(parent=self, orientation=self.orientation)
+        self.slider.valueChanged.connect(self.on_value_change)
+        # Style widget
+        self.style_widget()
+        # Shortcuts
+        page_step_back_sc = QShortcut(QKeySequence('Ctrl+Left'), self.slider)
+        page_step_back_sc.setContext(Qt.WidgetShortcut)
+        page_step_back_sc.activated.connect(lambda:self.setValue(self.value()-self.pageStep()))
+        page_step_forward_sc = QShortcut(QKeySequence('Ctrl+Right'), self.slider)
+        page_step_forward_sc.setContext(Qt.WidgetShortcut)
+        page_step_forward_sc.activated.connect(lambda:self.setValue(self.value()+self.pageStep()))
+
+    def style_widget(self):
+        # Widget layout 
+        widget_layout = QHBoxLayout()
+        widget_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft) 
+        widget_layout.setSpacing(10)
+        widget_layout.addWidget(self.slider)
+        widget_layout.addWidget(self.value_lbl)
+        self.setLayout(widget_layout)
+
+    def setRange(self, min_value, max_value):
+        self.slider.setRange(min_value, max_value)
+
+    def setSingleStep(self, step_value):
+        self.slider.setSingleStep(step_value)
+
+    def pageStep(self):
+        return self.slider.pageStep()
+
+    def setPageStep(self, page_value):
+        self.slider.setPageStep(page_value)
+
+    def value(self):
+        return self.slider.value()
+
+    def setValue(self, value):
+        self.slider.setValue(value)
+
+    def setFixedWidth(self, width):
+        self.slider.setFixedWidth(width)
+
+    def setCursor(self, cursor):
+        self.slider.setCursor(cursor)
+
+    def on_value_change(self):
+        self.value_lbl.setText(str(self.value()))
+
 class _EditAccWindow(QWidget):
     def __init__(self, edit_details):
         super().__init__(parent=None)
@@ -115,29 +171,19 @@ class _EditAccWindow(QWidget):
         self.gen_menu = QGroupBox(parent=self)
         # Generate toggle menu visibility btn
         self.gen_menu_toggle_vis_btn = _OptionMenu(parent=self, text='Generate', sub_menu=self.gen_menu)
+        # Gen def pwd len
+        self.gen_def_pwd_len_lbl = QLabel(parent=self.gen_menu, text='Length')
+        self.gen_def_pwd_len_slider = _MySlider(parent=self.gen_menu, orientation=Qt.Horizontal)
+        self.gen_def_pwd_len_slider.setRange(xml_handler.MIN_POSSIBLE_GEN_PWD_LEN, xml_handler.MAX_POSSIBLE_GEN_PWD_LEN)
+        self.gen_def_pwd_len_slider.setSingleStep(1)
+        self.gen_def_pwd_len_slider.setPageStep(5)
+        def_pwd_len = xml_handler.get_gen_def_pwd_len()
+        self.gen_def_pwd_len_slider.setValue(def_pwd_len)
         # Generate pwd btn
         self.gen_btn = QPushButton(parent=self.gen_menu, text='Generate')
         # Trigger enter key as click 
         self.gen_btn.setDefault(True)
         self.gen_btn.clicked.connect(self.gen_pwd)
-        # Min len
-        self.gen_pwd_min_len_lbl = QLabel(parent=self, text='Min length')
-        self.gen_pwd_min_len_spinbox = QSpinBox(parent=self)
-        self.gen_pwd_min_len_spinbox.setMinimum(xml_handler.MIN_POSSIBLE_GEN_PWD_LEN)
-        self.gen_pwd_min_len_spinbox.setMaximum(xml_handler.MAX_POSSIBLE_GEN_PWD_LEN)
-        min_pwd_len = xml_handler.get_gen_pwd_min_len()
-        self.gen_pwd_min_len_spinbox.setValue(min_pwd_len)
-        # Max len
-        self.gen_pwd_max_len_lbl = QLabel(parent=self, text='Max length')
-        self.gen_pwd_max_len_spinbox = QSpinBox(parent=self)
-        self.gen_pwd_max_len_spinbox.setMinimum(xml_handler.MIN_POSSIBLE_GEN_PWD_LEN)
-        self.gen_pwd_max_len_spinbox.setMaximum(xml_handler.MAX_POSSIBLE_GEN_PWD_LEN)
-        max_pwd_len = xml_handler.get_gen_pwd_max_len()
-        self.gen_pwd_max_len_spinbox.setValue(max_pwd_len)
-        # Reset gen pwd len btn
-        self.gen_pwd_reset_len_btn = QPushButton(parent=self, text='Reset')
-        self.gen_pwd_reset_len_btn.setDefault(True)
-        self.gen_pwd_reset_len_btn.clicked.connect(self.reset_gen_pwd_len)
         # Update btn
         self.update_btn = QPushButton(parent=self, text='Update')
         self.update_btn.setDefault(True)
@@ -156,17 +202,12 @@ class _EditAccWindow(QWidget):
         
     def style(self):
         self.setStyleSheet("""
-            .acc-name-input, .extra-info-input, .pwd-input, .pwd-vis-toggle-btn, .update-btn
-            {
-                font-size: 11pt;
-            }
-
-            .gen-submenu-input, .gen-pwd-btn
+            *
             {
                 font-size: 10pt;
             }
 
-            .gen-pwd-reset-btn, .gen-pwd-btn, .update-btn
+            .gen-pwd-btn, .update-btn
             {
                 border: 1px solid #353535;
             }
@@ -174,6 +215,26 @@ class _EditAccWindow(QWidget):
             .pwd-vis-toggle-btn
             {
                 border: none;
+            }
+
+            QSlider::groove:horizontal
+            {
+                background-color: #AAA; 
+                border-radius: 4px;
+                height: 10px;
+            }
+            QSlider::handle:horizontal   
+            {
+                background-color: #353535;
+                width: 20px;
+                height: 20px;
+                border-radius: 8px;
+                margin: -5px 0;
+            }
+            QSlider::handle:horizontal:hover, QSlider::handle:horizontal:focus
+            {
+                width: 16px;
+                border: 2px solid #88F;
             }
         """)
         fixed_size_policy = QSizePolicy()
@@ -208,28 +269,16 @@ class _EditAccWindow(QWidget):
         self.pwd_vis_toggle_btn.setCursor(QCursor(Qt.PointingHandCursor))
         # Gen menu toggle vis btn
         self.gen_menu_toggle_vis_btn.setSizePolicy(fixed_size_policy)
+        # Gen def pwd len
+        self.gen_def_pwd_len_lbl.setSizePolicy(fixed_size_policy)
+        self.gen_def_pwd_len_slider.setFixedWidth(200)
+        self.gen_def_pwd_len_slider.setCursor(Qt.CursorShape.PointingHandCursor)
         # Gen btn
         self.gen_btn.setProperty('class', 'gen-pwd-btn')
         self.gen_btn.setSizePolicy(fixed_size_policy)
         self.gen_btn.setFixedWidth(self.gen_btn.width()-25)
         self.gen_btn.setFixedHeight(30)
         self.gen_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        # Gen min len 
-        self.gen_pwd_min_len_lbl.setSizePolicy(fixed_size_policy)
-        self.gen_pwd_min_len_spinbox.setSizePolicy(fixed_size_policy)
-        self.gen_pwd_min_len_spinbox.setFixedWidth(65)
-        self.gen_pwd_min_len_spinbox.setFixedHeight(30)
-        # Gen max len
-        self.gen_pwd_max_len_lbl.setSizePolicy(fixed_size_policy)
-        self.gen_pwd_max_len_spinbox.setSizePolicy(fixed_size_policy)
-        self.gen_pwd_max_len_spinbox.setFixedWidth(65)
-        self.gen_pwd_max_len_spinbox.setFixedHeight(30)
-        # Reset gen len btn
-        self.gen_pwd_reset_len_btn.setProperty('class', 'gen-pwd-reset-btn')
-        self.gen_pwd_reset_len_btn.setSizePolicy(fixed_size_policy)
-        self.gen_pwd_reset_len_btn.setFixedWidth(self.gen_pwd_reset_len_btn.width()-50)
-        self.gen_pwd_reset_len_btn.setFixedHeight(30)
-        self.gen_pwd_reset_len_btn.setCursor(QCursor(Qt.PointingHandCursor))
         # Update
         self.update_btn.setProperty('class', 'update-btn')
         self.update_btn.setSizePolicy(fixed_size_policy)
@@ -247,27 +296,13 @@ class _EditAccWindow(QWidget):
         # Gen menu layout
         gen_menu_layout = QVBoxLayout()
         gen_menu_layout.setSpacing(20)
-        # Gen pwd len layout
-        gen_pwd_len_layout = QHBoxLayout()
-        gen_pwd_len_layout.setAlignment(Qt.AlignLeft)
-        gen_pwd_len_layout.setSpacing(0)
+        # Gen pwd def len layout
+        gen_def_pwd_len_layout = QHBoxLayout()
+        gen_def_pwd_len_layout.setSpacing(5)
+        gen_def_pwd_len_layout.addWidget(self.gen_def_pwd_len_lbl)
+        gen_def_pwd_len_layout.addWidget(self.gen_def_pwd_len_slider)
+        gen_menu_layout.addLayout(gen_def_pwd_len_layout)
         gen_menu_layout.addWidget(self.gen_btn)
-        # Gen pwd min len layout
-        gen_pwd_min_len_layout = QHBoxLayout()
-        gen_pwd_min_len_layout.setSpacing(5)
-        gen_pwd_min_len_layout.addWidget(self.gen_pwd_min_len_lbl)
-        gen_pwd_min_len_layout.addWidget(self.gen_pwd_min_len_spinbox)
-        # Gen pwd max len layout
-        gen_pwd_max_len_layout = QHBoxLayout()
-        gen_pwd_max_len_layout.setSpacing(5)
-        gen_pwd_max_len_layout.addWidget(self.gen_pwd_max_len_lbl)
-        gen_pwd_max_len_layout.addWidget(self.gen_pwd_max_len_spinbox)
-        gen_pwd_len_layout.addLayout(gen_pwd_min_len_layout)
-        gen_pwd_len_layout.addSpacing(20)
-        gen_pwd_len_layout.addLayout(gen_pwd_max_len_layout)
-        gen_pwd_len_layout.addSpacing(10)
-        gen_pwd_len_layout.addWidget(self.gen_pwd_reset_len_btn)
-        gen_menu_layout.addLayout(gen_pwd_len_layout)
         self.gen_menu.setLayout(gen_menu_layout)
         # Window layout
         window_layout = QVBoxLayout()
@@ -291,13 +326,7 @@ class _EditAccWindow(QWidget):
         self.pwd_vis_toggle_btn.setIcon(QIcon(icon_path))
 
     def gen_pwd(self):
-        min_pwd_len = self.gen_pwd_min_len_spinbox.value()
-        max_pwd_len = self.gen_pwd_max_len_spinbox.value()
-        # Min gen pwd len cannot be greater than max
-        if min_pwd_len > max_pwd_len:
-            QMessageBox.information(self, 'Generate Failed', 'Minimum selected range is greater than maximum')
-            return
-        pwd_len = random.randint(min_pwd_len, max_pwd_len)
+        pwd_len = self.gen_def_pwd_len_slider.value()
         pwd = ''
         for _ in range(pwd_len):
             arr_index = random.randrange(0, len(_gen_pwd_characters))
@@ -310,18 +339,6 @@ class _EditAccWindow(QWidget):
             self.gen_pwd()
             return
         self.pwd_input.setText(pwd)
-
-    def reset_gen_pwd_len(self):
-        # Min len
-        default_min_gen_pwd_len = xml_handler.get_gen_pwd_min_len()
-        cur_min_gen_pwd_len = self.gen_pwd_min_len_spinbox.value()
-        if cur_min_gen_pwd_len != default_min_gen_pwd_len:
-            self.gen_pwd_min_len_spinbox.setValue(default_min_gen_pwd_len)
-        # Max len
-        default_max_gen_pwd_len = xml_handler.get_gen_pwd_max_len()
-        cur_max_gen_pwd_len = self.gen_pwd_max_len_spinbox.value()
-        if cur_max_gen_pwd_len != default_max_gen_pwd_len:
-            self.gen_pwd_max_len_spinbox.setValue(default_max_gen_pwd_len)
 
     def update(self):
         acc_name = self.acc_name_input.text()

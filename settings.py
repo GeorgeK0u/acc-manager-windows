@@ -1,5 +1,5 @@
 from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QComboBox, QSpinBox, QCheckBox, QTabWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QShortcut
+from PySide2.QtWidgets import QWidget, QLabel, QLineEdit, QComboBox, QSlider, QCheckBox, QTabWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QShortcut
 from PySide2.QtGui import QIcon, QKeySequence
 
 from utils import xml_handler
@@ -14,6 +14,62 @@ class MyLineEdit(QLineEdit):
         super().focusInEvent(e)
         # Remove default select all on focus
         self.setCursorPosition(cursor_pos)
+
+class _MySlider(QWidget):
+    def __init__(self, parent, orientation):
+        super().__init__(parent)
+        self.orientation = orientation
+        self.init_ui()
+
+    def init_ui(self):
+        self.value_lbl = QLabel(parent=self)
+        self.slider = QSlider(parent=self, orientation=self.orientation)
+        self.slider.valueChanged.connect(self.on_value_change)
+        # Style widget
+        self.style_widget()
+        # Shortcuts
+        page_step_back_sc = QShortcut(QKeySequence('Ctrl+Left'), self.slider)
+        page_step_back_sc.setContext(Qt.WidgetShortcut)
+        page_step_back_sc.activated.connect(lambda:self.setValue(self.value()-self.pageStep()))
+        page_step_forward_sc = QShortcut(QKeySequence('Ctrl+Right'), self.slider)
+        page_step_forward_sc.setContext(Qt.WidgetShortcut)
+        page_step_forward_sc.activated.connect(lambda:self.setValue(self.value()+self.pageStep()))
+
+    def style_widget(self):
+        # Widget layout 
+        widget_layout = QHBoxLayout()
+        widget_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft) 
+        widget_layout.setSpacing(10)
+        widget_layout.addWidget(self.slider)
+        widget_layout.addWidget(self.value_lbl)
+        self.setLayout(widget_layout)
+
+    def setRange(self, min_value, max_value):
+        self.slider.setRange(min_value, max_value)
+
+    def setSingleStep(self, step_value):
+        self.slider.setSingleStep(step_value)
+
+    def pageStep(self):
+        return self.slider.pageStep()
+
+    def setPageStep(self, page_value):
+        self.slider.setPageStep(page_value)
+
+    def value(self):
+        return self.slider.value()
+
+    def setValue(self, value):
+        self.slider.setValue(value)
+
+    def setFixedWidth(self, width):
+        self.slider.setFixedWidth(width)
+
+    def setCursor(self, cursor):
+        self.slider.setCursor(cursor)
+
+    def on_value_change(self):
+        self.value_lbl.setText(str(self.value()))
 
 class _SettingsWindow(QWidget):
     def __init__(self):
@@ -61,24 +117,14 @@ class _SettingsWindow(QWidget):
         self.tabs.addTab(self.security_tab, 'Security')
         # # Password generation tab
         self.pwd_gen_tab = QWidget(parent=self.tabs)
-        # Min len
-        self.gen_pwd_min_len_lbl = QLabel(parent=self.pwd_gen_tab, text='Min length')
-        self.gen_pwd_min_len_spinbox = QSpinBox(parent=self.pwd_gen_tab)
-        self.gen_pwd_min_len_spinbox.setMinimum(xml_handler.MIN_POSSIBLE_GEN_PWD_LEN)
-        self.gen_pwd_min_len_spinbox.setMaximum(xml_handler.MAX_POSSIBLE_GEN_PWD_LEN)
-        min_pwd_len = xml_handler.get_gen_pwd_min_len()
-        self.gen_pwd_min_len_spinbox.setValue(min_pwd_len)
-        # Max len
-        self.gen_pwd_max_len_lbl = QLabel(parent=self.pwd_gen_tab, text='Max length')
-        self.gen_pwd_max_len_spinbox = QSpinBox(parent=self.pwd_gen_tab)
-        self.gen_pwd_max_len_spinbox.setMinimum(xml_handler.MIN_POSSIBLE_GEN_PWD_LEN)
-        self.gen_pwd_max_len_spinbox.setMaximum(xml_handler.MAX_POSSIBLE_GEN_PWD_LEN)
-        max_pwd_len = xml_handler.get_gen_pwd_max_len()
-        self.gen_pwd_max_len_spinbox.setValue(max_pwd_len)
-        # Reset gen pwd len btn
-        self.gen_pwd_reset_len_btn = QPushButton(parent=self.pwd_gen_tab, text='Reset')
-        self.gen_pwd_reset_len_btn.setProperty('class', 'gen-pwd-reset-btn')
-        self.gen_pwd_reset_len_btn.clicked.connect(self.reset_gen_pwd_len)
+        # Gen def pwd len
+        self.gen_def_pwd_len_lbl = QLabel(parent=self.pwd_gen_tab, text='Length')
+        self.gen_def_pwd_len_slider = _MySlider(parent=self.pwd_gen_tab, orientation=Qt.Horizontal)
+        self.gen_def_pwd_len_slider.setRange(xml_handler.MIN_POSSIBLE_GEN_PWD_LEN, xml_handler.MAX_POSSIBLE_GEN_PWD_LEN)
+        self.gen_def_pwd_len_slider.setSingleStep(1)
+        self.gen_def_pwd_len_slider.setPageStep(5)
+        def_pwd_len = xml_handler.get_gen_def_pwd_len()
+        self.gen_def_pwd_len_slider.setValue(def_pwd_len)
         # Add tab
         self.tabs.addTab(self.pwd_gen_tab, 'Password generation')
         # Style window
@@ -94,10 +140,25 @@ class _SettingsWindow(QWidget):
             {
                 font-size: 11pt;
             }
-
-            .gen-pwd-reset-btn
+            
+            QSlider::groove:horizontal
             {
-                border: 1px solid #353535;
+                background-color: #AAA; 
+                border-radius: 4px;
+                height: 10px;
+            }
+            QSlider::handle:horizontal   
+            {
+                background-color: #353535;
+                width: 20px;
+                height: 20px;
+                border-radius: 8px;
+                margin: -5px 0;
+            }
+            QSlider::handle:horizontal:hover, QSlider::handle:horizontal:focus
+            {
+                width: 16px;
+                border: 2px solid #88F;
             }
         """)
         fixed_size_policy = QSizePolicy()
@@ -141,53 +202,25 @@ class _SettingsWindow(QWidget):
         security_tab_layout.addLayout(security_tab_pwd_vis_layout)
         self.security_tab.setLayout(security_tab_layout)
         # Pwd generation tab
-        # Gen min len
-        self.gen_pwd_min_len_lbl.setSizePolicy(fixed_size_policy)
-        self.gen_pwd_min_len_spinbox.setSizePolicy(fixed_size_policy)
-        self.gen_pwd_min_len_spinbox.setFixedWidth(65)
-        self.gen_pwd_min_len_spinbox.setFixedHeight(30)
-        # Gen max len
-        self.gen_pwd_max_len_lbl.setSizePolicy(fixed_size_policy)
-        self.gen_pwd_max_len_spinbox.setSizePolicy(fixed_size_policy)
-        self.gen_pwd_max_len_spinbox.setFixedWidth(65)
-        self.gen_pwd_max_len_spinbox.setFixedHeight(30)
-        # Reset gen pwd len btn
-        self.gen_pwd_reset_len_btn.setSizePolicy(fixed_size_policy)
-        self.gen_pwd_reset_len_btn.setFixedWidth(self.gen_pwd_reset_len_btn.width()-50)
-        self.gen_pwd_reset_len_btn.setFixedHeight(30)
-        self.gen_pwd_reset_len_btn.setDefault(True)
+        # Gen def pwd len
+        self.gen_def_pwd_len_lbl.setSizePolicy(fixed_size_policy)
+        self.gen_def_pwd_len_slider.setFixedWidth(200)
+        self.gen_def_pwd_len_slider.setCursor(Qt.CursorShape.PointingHandCursor)
         # Add widgets to tab
         pwd_gen_tab_layout = QVBoxLayout()
         pwd_gen_tab_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
-        pwd_gen_tab_min_len_layout = QHBoxLayout()
-        pwd_gen_tab_min_len_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
-        pwd_gen_tab_min_len_layout.addWidget(self.gen_pwd_min_len_lbl)
-        pwd_gen_tab_min_len_layout.addWidget(self.gen_pwd_min_len_spinbox)
-        pwd_gen_tab_layout.addLayout(pwd_gen_tab_min_len_layout)
-        pwd_gen_tab_max_len_layout = QHBoxLayout()
-        pwd_gen_tab_max_len_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
-        pwd_gen_tab_max_len_layout.addWidget(self.gen_pwd_max_len_lbl)
-        pwd_gen_tab_max_len_layout.addWidget(self.gen_pwd_max_len_spinbox)
-        pwd_gen_tab_layout.addLayout(pwd_gen_tab_max_len_layout)
-        pwd_gen_tab_layout.addWidget(self.gen_pwd_reset_len_btn)
+        pwd_gen_tab_def_len_layout = QHBoxLayout()
+        pwd_gen_tab_def_len_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
+        pwd_gen_tab_def_len_layout.setSpacing(15)
+        pwd_gen_tab_def_len_layout.addWidget(self.gen_def_pwd_len_lbl)
+        pwd_gen_tab_def_len_layout.addWidget(self.gen_def_pwd_len_slider)
+        pwd_gen_tab_layout.addLayout(pwd_gen_tab_def_len_layout)
         self.pwd_gen_tab.setLayout(pwd_gen_tab_layout)
         # Window layout
         window_layout = QVBoxLayout()
         window_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
         window_layout.addWidget(self.tabs)
         self.setLayout(window_layout)
-
-    def reset_gen_pwd_len(self):
-        # Min len
-        default_min_gen_pwd_len = xml_handler.get_gen_pwd_min_len()
-        cur_min_gen_pwd_len = self.gen_pwd_min_len_spinbox.value()
-        if cur_min_gen_pwd_len != default_min_gen_pwd_len:
-            self.gen_pwd_min_len_spinbox.setValue(default_min_gen_pwd_len)
-        # Max len
-        default_max_gen_pwd_len = xml_handler.get_gen_pwd_max_len()
-        cur_max_gen_pwd_len = self.gen_pwd_max_len_spinbox.value()
-        if cur_max_gen_pwd_len != default_max_gen_pwd_len:
-            self.gen_pwd_max_len_spinbox.setValue(default_max_gen_pwd_len)
 
     def update_settings(self):
         # General section
@@ -202,10 +235,8 @@ class _SettingsWindow(QWidget):
         sel_index = self.pwd_vis_dropdown.currentIndex()
         xml_handler.update_pwd_vis_option_index(sel_index)
         # Password generation section
-        typed_gen_pwd_min_len = self.gen_pwd_min_len_spinbox.value()
-        typed_gen_pwd_max_len = self.gen_pwd_max_len_spinbox.value()
-        if typed_gen_pwd_min_len <= typed_gen_pwd_max_len:
-            xml_handler.update_gen_pwd_len(typed_gen_pwd_min_len, typed_gen_pwd_max_len)
+        sel_def_pwd_len = self.gen_def_pwd_len_slider.value()
+        xml_handler.update_gen_def_pwd_len(sel_def_pwd_len)
 
     def closeEvent(self, e):
         super().closeEvent(e)
