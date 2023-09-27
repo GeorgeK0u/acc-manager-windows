@@ -90,13 +90,36 @@ class _OptionMenu(QWidget):
 
     def on_arrow_btn_click(self):
         self.is_menu_visible = not self.is_menu_visible
-        self.arrow_btn.setText('V' if self.is_menu_visible else '>')
-        self.sub_menu.setVisible(self.is_menu_visible)
+        if self.is_menu_visible:
+            self.show_menu()
+        else:
+            self.hide_menu()
+        
+    def show_menu(self):
+        # Check for shortcut
+        if self.sub_menu.isVisible():
+            return
+        self.arrow_btn.setText('v')
+        self.sub_menu.setVisible(True)
         # Gen pwd on first gen menu open, if no pwd is entered
-        if self.first_open and self.is_menu_visible:
+        if self.first_open:
             if _window.pwd_input.text() == '':
                 _window.gen_pwd()
             self.first_open = False
+        # Update from shortcut
+        if not self.is_menu_visible:
+            self.is_menu_visible = True
+
+    def hide_menu(self):
+        # Check for shortcut
+        if not self.sub_menu.isVisible():
+            return
+        self.arrow_btn.setText('>')
+        self.sub_menu.setVisible(False)
+        # Update from shortcut
+        if self.is_menu_visible:
+            self.is_menu_visible = False
+            self.arrow_btn.setFocus()
 
 class _MySlider(QWidget):
     def __init__(self, parent, orientation):
@@ -233,6 +256,25 @@ class _AddAccWindow(QWidget):
         close_window_sc = QShortcut(QKeySequence('Ctrl+W'), self)
         close_window_sc.setAutoRepeat(False)
         close_window_sc.activated.connect(self.close)
+        # Toggle gen menu
+        # From arrow
+        show_gen_menu_arrow_sc = QShortcut(QKeySequence('Alt+Right'), self.gen_menu_toggle_vis_btn)
+        show_gen_menu_arrow_sc.setContext(Qt.WidgetWithChildrenShortcut)
+        show_gen_menu_arrow_sc.setAutoRepeat(False)
+        show_gen_menu_arrow_sc.activated.connect(self.gen_menu_toggle_vis_btn.show_menu)
+        hide_gen_menu_arrow_sc = QShortcut(QKeySequence('Alt+Left'), self.gen_menu_toggle_vis_btn)
+        hide_gen_menu_arrow_sc.setContext(Qt.WidgetWithChildrenShortcut)
+        hide_gen_menu_arrow_sc.setAutoRepeat(False)
+        hide_gen_menu_arrow_sc.activated.connect(self.gen_menu_toggle_vis_btn.hide_menu)
+        # From inside sub-menu
+        show_gen_menu_sc = QShortcut(QKeySequence('Alt+Right'), self.gen_menu)
+        show_gen_menu_sc.setContext(Qt.WidgetWithChildrenShortcut)
+        show_gen_menu_sc.setAutoRepeat(False)
+        show_gen_menu_sc.activated.connect(self.gen_menu_toggle_vis_btn.show_menu)
+        hide_gen_menu_sc = QShortcut(QKeySequence('Alt+Left'), self.gen_menu)
+        hide_gen_menu_sc.setContext(Qt.WidgetWithChildrenShortcut)
+        hide_gen_menu_sc.setAutoRepeat(False)
+        hide_gen_menu_sc.activated.connect(self.gen_menu_toggle_vis_btn.hide_menu)
         
     def style(self):
         self.setStyleSheet("""
