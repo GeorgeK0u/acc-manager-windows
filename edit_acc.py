@@ -85,12 +85,18 @@ class _OptionMenu(QWidget):
         self.sub_menu = sub_menu
         # Start hidden
         self.is_menu_visible = False
+        self.first_open = True
         self.sub_menu.setVisible(self.is_menu_visible)
 
     def on_arrow_btn_click(self):
         self.is_menu_visible = not self.is_menu_visible
         self.arrow_btn.setText('V' if self.is_menu_visible else '>')
         self.sub_menu.setVisible(self.is_menu_visible)
+        # Gen pwd on first gen menu open, if no pwd is entered
+        if self.first_open and self.is_menu_visible:
+            if _window.pwd_input.text() == '':
+                _window.gen_pwd()
+            self.first_open = False
 
 class _MySlider(QWidget):
     def __init__(self, parent, orientation):
@@ -147,6 +153,9 @@ class _MySlider(QWidget):
 
     def on_value_change(self):
         self.value_lbl.setText(str(self.value()))
+        # Gen pwd on slider value change
+        if _window:
+            _window.gen_pwd()
 
 class _EditAccWindow(QWidget):
     def __init__(self, edit_details):
@@ -385,20 +394,20 @@ class _EditAccWindow(QWidget):
         if value == 0:
             # Prevent last checkbox from being unchecked
             only_cbx_checked = self.get_only_checked_char_group_cbx()
-            if not only_cbx_checked:
-                return
-            # Disable it
-            only_cbx_checked.setEnabled(False)
+            if only_cbx_checked:
+                # Disable it
+                only_cbx_checked.setEnabled(False)
         else:
             checked_count = self.get_char_group_cbx_checked_count()
-            if checked_count != 2:
-                return
-            # Undo disabled checkbox
-            for char_group_cbx in self.char_group_cbx_list:
-                if char_group_cbx.isEnabled(): 
-                    continue
-                char_group_cbx.setEnabled(True)
-                break
+            if checked_count == 2:
+                # Undo disabled checkbox
+                for char_group_cbx in self.char_group_cbx_list:
+                    if char_group_cbx.isEnabled(): 
+                        continue
+                    char_group_cbx.setEnabled(True)
+                    break
+        # Gen pwd on char group cbx state change
+        self.gen_pwd()
 
     def get_rand_char_from_range_list(self, range_list):
         start = range_list[0]
