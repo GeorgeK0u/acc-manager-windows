@@ -12,6 +12,7 @@ from utils import client
 _window = None 
 clipboard = None
 _gen_pwd_characters = None
+_similar_characters = None
 
 class _MyLineEdit(QLineEdit):
     def __init__(self, parent):
@@ -399,6 +400,16 @@ class _EditAccWindow(QWidget):
                 char_group_cbx.setEnabled(True)
                 break
 
+    def get_rand_char_from_range_list(self, range_list):
+        start = range_list[0]
+        end = range_list[1]
+        while 1:
+            ascii_ = random.randrange(start, end)
+            ch = chr(ascii_)
+            # Filter char
+            if not _similar_characters.__contains__(ch):
+                return ch
+
     def gen_pwd(self):
         pwd_len = self.gen_def_pwd_len_slider.value()
         pwd = ''
@@ -411,7 +422,7 @@ class _EditAccWindow(QWidget):
         for _ in range(pwd_len):
             list_index = random.randrange(len(sel_char_group_list))
             char_list = sel_char_group_list[list_index]
-            ch = chr(random.randint(char_list[0], char_list[1])) if type(char_list[0]) == int else char_list[random.randrange(len(char_list))]
+            ch = self.get_rand_char_from_range_list(char_list) if type(char_list[0]) == int else char_list[random.randrange(len(char_list))]
             pwd += ch
         # Check if password already exists 
         pwds = xml_handler.get_acc_pwds() 
@@ -502,14 +513,15 @@ class _EditAccWindow(QWidget):
         _window = None
 
 def init():
-    global clipboard, _gen_pwd_characters
+    global clipboard, _gen_pwd_characters, _similar_characters
     clipboard = QClipboard()
     _gen_pwd_characters = [
         [65, 90], 
         [97, 122], 
         [48, 57], 
-        ['!', '@', '#', '$', '%', '^', '*', '(', ')', '-', '_', '=', '+', '[', '{', ']', '}', '\\', '|', ';', ':', ',', '<', '.', '>', '/', '?']
+        ['!', '@', '#', '$', '%', '^', '*', '(', ')', '-', '_', '=', '+', '[', '{', ']', '}', '\\', ';', ':', ',', '<', '.', '>', '/', '?']
     ]
+    _similar_characters = ['I', 'l']
 
 def create(edit_details):
     global _window
