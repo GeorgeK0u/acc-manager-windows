@@ -35,11 +35,9 @@ class _MyLineEdit(QLineEdit):
                 text = self.text()
                 selection = text[selStartIndex:selEnd]
                 clipboard.setText(selection)
-            e.ignore()
-            return
+            return True
         if self.is_password_type and e.key() == Qt.Key_Space:
-            e.ignore()
-            return
+            return True
         super().keyPressEvent(e)
 
     def set_is_password_type(self, value):
