@@ -13,7 +13,11 @@ _window = None
 clipboard = None
 _gen_pwd_characters = None
 
-class MyLineEdit(QLineEdit):
+class _MyLineEdit(QLineEdit):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.is_password_type = False
+
     def focusInEvent(self, e):
         # Get cursor position before the focus-in event overrides it
         cursor_pos = self.cursorPosition()
@@ -22,8 +26,9 @@ class MyLineEdit(QLineEdit):
         self.setCursorPosition(cursor_pos)
 
     def keyPressEvent(self, e):
+        key = e.key()
         # Copy selection (PySide prevents copying masked pwd)
-        if e.modifiers() == Qt.ControlModifier and e.key() == Qt.Key_C:
+        if e.modifiers() == Qt.ControlModifier and key == Qt.Key_C:
             if not e.isAutoRepeat() and self.selectionLength() > 0:
                 selStartIndex = self.selectionStart()
                 selEnd = self.selectionEnd()
@@ -32,7 +37,13 @@ class MyLineEdit(QLineEdit):
                 clipboard.setText(selection)
             e.ignore()
             return
+        if self.is_password_type and e.key() == Qt.Key_Space:
+            e.ignore()
+            return
         super().keyPressEvent(e)
+
+    def set_is_password_type(self, value):
+        self.is_password_type = value
 
 class _OptionMenu(QWidget):
     def __init__(self, parent, text, sub_menu):
@@ -156,12 +167,13 @@ class _AddAccWindow(QWidget):
         self.setWindowTitle('Add Account')
         # Widgets
         # Account name input
-        self.acc_name_input = MyLineEdit(parent=self)
+        self.acc_name_input = _MyLineEdit(parent=self)
         self.acc_name_input.setText('')
         # Extra info input
-        self.extra_info_input = MyLineEdit(parent=self)
+        self.extra_info_input = _MyLineEdit(parent=self)
         # Password input
-        self.pwd_input = MyLineEdit(parent=self)
+        self.pwd_input = _MyLineEdit(parent=self)
+        self.pwd_input.set_is_password_type(True)
         # Password toggle visibility btn
         self.pwd_vis_toggle_btn = QPushButton(parent=self.pwd_input)
         # Trigger enter key as click 
@@ -391,7 +403,12 @@ class _AddAccWindow(QWidget):
 def init():
     global clipboard, _gen_pwd_characters
     clipboard = QClipboard()
-    _gen_pwd_characters = [[48, 57], [65, 90], [97, 122], ['-', '_', '.', ',', '/', ';']]
+    _gen_pwd_characters = [
+        [48, 57], 
+        [65, 90], 
+        [97, 122], 
+        ['!', '@', '#', '$', '%', '^', '*', '(', ')', '-', '_', '=', '+', '[', '{', ']', '}', '\\', '|', ';', ':', ',', '<', '.', '>', '/', '?']
+    ]
 
 def create():
     global _window
