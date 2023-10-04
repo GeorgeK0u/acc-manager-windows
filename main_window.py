@@ -180,6 +180,17 @@ class _Table(QTableWidget):
         focus_on_prev_widget_sc.setAutoRepeat(False)
         focus_on_prev_widget_sc.activated.connect(self.focus_on_prev_widget)
 
+    def focusInEvent(self, e):
+        super().focusInEvent(e)
+        # By default if an item is focused and table updates, it doesn't focus on any item  
+        cur_row_index = self.currentRow()
+        if self.rowCount() == 0 or cur_row_index >= 0:
+            return
+        # Focus on first item
+        first_item = self.item(0, 0)
+        self.setCurrentItem(first_item)
+        self.setItemSelected(first_item, True)
+
     def focus_on_header(self):
         self.horizontalHeader().setFocus()
 
