@@ -502,10 +502,6 @@ class _MainWindow(QWidget):
             {
                 font-size: 9pt;
             }
-            .table-number-row
-            {
-                font-size: 9pt;
-            }
 
             .search-btn, .sort-order-btn, .settings-btn, .add-acc-btn, .manual-sync-btn, .all-pwds-visibility-btn
             {
@@ -582,9 +578,6 @@ class _MainWindow(QWidget):
         table_size_policy.setHorizontalPolicy(QSizePolicy.Expanding)
         table_size_policy.setVerticalPolicy(QSizePolicy.Fixed)
         self.table.setSizePolicy(table_size_policy)
-        # Number row
-        number_row = self.table.verticalHeader()
-        number_row.setProperty('class', 'table-number-row')
         # Layout
         # Sort layout
         sort_layout = QHBoxLayout()
