@@ -1,4 +1,4 @@
-from PySide2.QtCore import Qt, Signal, QSize
+from PySide2.QtCore import Qt, Signal, Slot, QSize
 from PySide2.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QCheckBox, QComboBox, QTableWidget, QHeaderView, QTableWidgetItem, QMenu, QMessageBox, QHBoxLayout, QVBoxLayout, QSizePolicy, QShortcut
 from PySide2.QtGui import QIcon, QKeySequence, QCursor, QClipboard
 
@@ -118,9 +118,11 @@ class _Table(QTableWidget):
         self.set_max_height = True
         self.window_bottom_offset = 50
         self.above_layouts_height = 0
-        #
-        self.last_sel_value = None
-        self.last_sel_col_index = None
+        # Re-focus on last focused cell
+        self.apply_custom_focus = True
+        self.can_update_last_focused = True
+        self.last_focused_acc_name = None
+        self.currentCellChanged.connect(self.on_cell_focus_change)
         # Shortcuts
         # Focus on header
         focus_on_header_sc = QShortcut(QKeySequence('Ctrl+Up'), self)
@@ -180,16 +182,28 @@ class _Table(QTableWidget):
         focus_on_prev_widget_sc.setAutoRepeat(False)
         focus_on_prev_widget_sc.activated.connect(self.focus_on_prev_widget)
 
+    def get_updated_last_focused_row_index(self):
+        cur_acc_names = list(map(lambda acc:acc[0], _window.accs_copy))
+        for i in range(len(cur_acc_names)):
+            acc_name = cur_acc_names[i]
+            if acc_name != self.last_focused_acc_name:
+                continue
+            return i
+        return -1
+        
     def focusInEvent(self, e):
         super().focusInEvent(e)
-        # By default if an item is focused and table updates, it doesn't focus on any item  
-        cur_row_index = self.currentRow()
-        if self.rowCount() == 0 or cur_row_index >= 0:
+        if not self.apply_custom_focus or self.rowCount() == 0:
             return
-        # Focus on first item
-        first_item = self.item(0, 0)
-        self.setCurrentItem(first_item)
-        self.setItemSelected(first_item, True)
+        refocus_index = self.get_updated_last_focused_row_index()
+        item = None
+        if refocus_index > -1:
+            item = self.item(refocus_index, 0) 
+        else:
+            # By default if an item is focused and table updates, it doesn't focus on any item  
+            item = self.item(0, 0)
+        self.setCurrentItem(item)
+        self.setItemSelected(item, True)
 
     def focus_on_header(self):
         self.horizontalHeader().setFocus()
@@ -219,11 +233,16 @@ class _Table(QTableWidget):
         itemCount = len(self.get_all_accs())
         if itemCount <= 1:
             return
-        # Store last table selection
-        _window.store_cur_table_selection()
         # Update sort
         _window.sort_results()
-        _window.switch_table_focus_cell()
+
+    def on_cell_focus_change(self, cur_cell_row_index, cur_cell_col_index, prev_cell_row_index, prev_cell_col_index):
+        if not self.can_update_last_focused:
+            return
+        focused_acc_name = self.item(cur_cell_row_index, 0)
+        if self.last_focused_acc_name == focused_acc_name:
+            return
+        self.last_focused_acc_name = focused_acc_name.text()
 
     def get_acc(self, row_index):
         row_item = []
@@ -260,10 +279,13 @@ class _Table(QTableWidget):
         self.on_rows_changed()
 
     def clear_all_accs(self):
+        # Clearing the table replaces the focused item
+        self.can_update_last_focused = False
         row_index = self.rowCount()-1
         while row_index >= 0:
             self.removeRow(row_index)
             row_index -= 1
+        self.can_update_last_focused = True
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
@@ -643,8 +665,11 @@ class _MainWindow(QWidget):
             self.check_update_all_pwds_vis_btn(operation_bool=False)
         self.table.currentItem().setText(pwd_text)
         # Cause a re-paint to update cell value
+        # Prevent applying table custom focus on repaint focus trigger
+        self.table.apply_custom_focus = False
         self.table.horizontalHeader().setFocus()
         self.table.setFocus()
+        self.table.apply_custom_focus = True
 
     def update_all_pwds_vis_btn(self):
         _set_all_pwds_vis_bool(not _all_pwds_vis_bool)
@@ -684,46 +709,13 @@ class _MainWindow(QWidget):
                     pwd_value = cryptor.mask_pwd(pwd_text)
                 item.setText(pwd_value)
             # Cause a re-paint to update table values
+            # Prevent applying table custom focus on repaint focus trigger
+            self.table.apply_custom_focus = False
             self.table.setFocus()
             self.all_pwds_vis_btn.setFocus()
+            self.table.apply_custom_focus = True
             # Reset manual count
             self.reset_manual_pwd_vis_count()
-
-    def store_cur_table_selection(self):
-        sel_row = self.table.currentRow()
-        # No row selected
-        if sel_row == -1:
-            self.table.last_sel_value = None
-            self.table.last_sel_col_index = -1
-            return
-        sel_col_index = self.table.currentColumn()
-        sel_value = self.table.item(sel_row, sel_col_index).text()
-        if sel_col_index == self.table.columnCount()-1:
-            # Store password without mask to re-find it after sorting
-            if sel_value.__contains__(cryptor.PWD_MASK_CHAR):
-                sel_value = self.get_pwd_of_row(sel_row)
-        self.table.last_sel_value = sel_value
-        self.table.last_sel_col_index = sel_col_index
-
-    def switch_table_focus_cell(self):
-        if self.table.last_sel_value == None:
-            return
-        new_sel_row = None
-        sel_col_index = self.table.last_sel_col_index
-        sel_value = self.table.last_sel_value
-        accs = self.table.get_all_accs()
-        for i in range(len(accs)):
-            acc = accs[i]
-            if acc[sel_col_index] != sel_value:
-                continue
-            new_sel_row = i
-            break
-        # Get item
-        acc = self.table.item(new_sel_row, sel_col_index)
-        # Focus on item
-        self.table.setCurrentItem(acc)
-        # Select item
-        self.table.setItemSelected(acc, True)
 
     def update_accs_copy_list(self, accs):
         self.accs_copy = accs
@@ -760,10 +752,8 @@ class _MainWindow(QWidget):
         item_count = len(self.table.get_all_accs())
         if item_count <= 1:
             return
-        self.store_cur_table_selection()
         # Apply sort
         self.sort_results()
-        _window.switch_table_focus_cell()
 
     def on_sort_order_btn_click(self):
         self.sort_order = _DESC_ORDER if self.sort_order == _ASC_ORDER else _ASC_ORDER
@@ -774,10 +764,8 @@ class _MainWindow(QWidget):
         item_count = len(self.table.get_all_accs())
         if item_count <= 1:
             return
-        self.store_cur_table_selection()
         # Update sort
         self.sort_results()
-        _window.switch_table_focus_cell()
 
     def get_time_added_item_index_of(self, accs, item):
         index = accs.index(item)
