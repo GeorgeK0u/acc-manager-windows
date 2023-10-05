@@ -193,7 +193,11 @@ class _Table(QTableWidget):
         
     def focusInEvent(self, e):
         super().focusInEvent(e)
-        if not self.apply_custom_focus or self.rowCount() == 0:
+        if self.rowCount() == 0:
+            return
+        if not self.apply_custom_focus:
+            # Reset bool automatically
+            self.apply_custom_focus = True
             return
         refocus_index = self.get_updated_last_focused_row_index()
         item = None
@@ -240,8 +244,6 @@ class _Table(QTableWidget):
         if not self.can_update_last_focused:
             return
         focused_acc_name = self.item(cur_cell_row_index, 0)
-        if self.last_focused_acc_name == focused_acc_name:
-            return
         self.last_focused_acc_name = focused_acc_name.text()
 
     def get_acc(self, row_index):
@@ -669,7 +671,6 @@ class _MainWindow(QWidget):
         self.table.apply_custom_focus = False
         self.table.horizontalHeader().setFocus()
         self.table.setFocus()
-        self.table.apply_custom_focus = True
 
     def update_all_pwds_vis_btn(self):
         _set_all_pwds_vis_bool(not _all_pwds_vis_bool)
@@ -713,7 +714,6 @@ class _MainWindow(QWidget):
             self.table.apply_custom_focus = False
             self.table.setFocus()
             self.all_pwds_vis_btn.setFocus()
-            self.table.apply_custom_focus = True
             # Reset manual count
             self.reset_manual_pwd_vis_count()
 
