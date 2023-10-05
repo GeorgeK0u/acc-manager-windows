@@ -916,22 +916,26 @@ class _MainWindow(QWidget):
                 if value.__contains__(search_query):
                     search_results.append(acc)
                     break
-        # Display search results
-        # Default sorting
-        if self.sort_option_index == _SORT_TIME_ADDED or len(search_results) <= 1:
-            self.table.clear_all_accs()
-            for result in search_results:
-                self.table.append_acc(result)
-            # Update pwd copy list
-            self.update_accs_copy_list(search_results)
-            if len(search_results) > 0:
-                self.reset_manual_pwd_vis_count()
-        else:
-            self.sort_results(search_results)
         if len(search_results) > 0:
             # Remove no accs header
             self.set_no_accs_header_vis(visible=False)
+            # Display search results
+            # Keep default sorting
+            if self.sort_option_index == _SORT_TIME_ADDED or len(search_results) == 1:
+                self.table.clear_all_accs()
+                if len(search_results) > 1 and self.sort_order == _DESC_ORDER:
+                    search_results.reverse()
+                for result in search_results:
+                    self.table.append_acc(result)
+                # Update pwd copy list
+                self.update_accs_copy_list(search_results)
+                self.reset_manual_pwd_vis_count()
+            else:
+                self.sort_results(search_results)
         else:
+            self.table.clear_all_accs()
+            # Update pwd copy list
+            self.update_accs_copy_list(search_results)
             # Show no accs header
             self.set_no_accs_header_vis(text='No search results', visible=True)
 
