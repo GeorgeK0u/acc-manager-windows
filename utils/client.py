@@ -54,9 +54,13 @@ def create_conn():
                 # Update connection status from main thread
                 view_handler.set_conn_text('Not connected')
                 return
-            server_public_ip = socket.gethostbyname('my-ddns.ddns.net')
-            # local_conn = public_ip == server_public_ip
-            local_conn = True
+            local_conn = None
+            server_public_ip = None
+            try:
+                server_public_ip = socket.gethostbyname('my-ddns.ddns.net')
+                local_conn = public_ip == server_public_ip
+            except:
+                print('Failed to find No-IP DNS')
             host = ''
             if local_conn:
                 # Check if the server is running
