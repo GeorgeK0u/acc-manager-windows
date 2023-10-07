@@ -209,6 +209,10 @@ class _EditAccWindow(QWidget):
         # Trigger enter key as click 
         self.pwd_vis_toggle_btn.setDefault(True)
         self.pwd_vis_toggle_btn.clicked.connect(self.toggle_pwd_vis)
+        # Copy pwd btn
+        self.copy_pwd_btn = QPushButton(parent=self)
+        self.copy_pwd_btn.setDefault(True)
+        self.copy_pwd_btn.clicked.connect(self.copy_pwd)
         # Generate group menu
         self.gen_menu = QGroupBox(parent=self)
         # Generate toggle menu visibility btn
@@ -291,7 +295,7 @@ class _EditAccWindow(QWidget):
                 border: 1px solid #353535;
             }
 
-            .pwd-vis-toggle-btn
+            .pwd-vis-toggle-btn, .copy-pwd-btn
             {
                 border: none;
             }
@@ -339,6 +343,13 @@ class _EditAccWindow(QWidget):
         self.pwd_input.setFixedHeight(30)
         self.pwd_input.setPlaceholderText('Password')
         self.pwd_input.setEchoMode(QLineEdit.Password)
+        # Copy pwd btn
+        self.copy_pwd_btn.setProperty('class', 'copy-pwd-btn')
+        self.copy_pwd_btn.setSizePolicy(fixed_size_policy)
+        self.copy_pwd_btn.setFixedSize(QSize(28, 28))
+        self.copy_pwd_btn.setIcon(QIcon(r'.\Resources\Icons\copy-to-clipboard-icon.png'))
+        self.pwd_vis_toggle_btn.setIconSize(QSize(28, 28))
+        self.copy_pwd_btn.setCursor(QCursor(Qt.PointingHandCursor))
         # Password toggle visibility btn
         self.pwd_vis_toggle_btn.setProperty('class', 'pwd-vis-toggle-btn')
         self.pwd_vis_toggle_btn.setSizePolicy(fixed_size_policy)
@@ -375,6 +386,12 @@ class _EditAccWindow(QWidget):
         pwd_input_layout.addStretch()
         pwd_input_layout.addWidget(self.pwd_vis_toggle_btn)
         self.pwd_input.setLayout(pwd_input_layout)
+        # Pwd layout
+        pwd_layout = QHBoxLayout()
+        pwd_layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
+        pwd_layout.setSpacing(8)
+        pwd_layout.addWidget(self.pwd_input)
+        pwd_layout.addWidget(self.copy_pwd_btn)
         # Gen menu layout
         gen_menu_layout = QVBoxLayout()
         gen_menu_layout.setSpacing(20)
@@ -399,7 +416,7 @@ class _EditAccWindow(QWidget):
         window_layout.setSpacing(15)
         window_layout.addWidget(self.acc_name_input)
         window_layout.addWidget(self.extra_info_input)
-        window_layout.addWidget(self.pwd_input)
+        window_layout.addLayout(pwd_layout)
         window_layout.addWidget(self.gen_menu_toggle_vis_btn)
         window_layout.addWidget(self.gen_menu)
         window_layout.addWidget(self.update_btn)
@@ -413,6 +430,12 @@ class _EditAccWindow(QWidget):
         # Update icon
         icon_path = r'.\Resources\Icons\hide-pwd-icon.png' if show_pwd else r'.\Resources\Icons\show-pwd-icon.png'
         self.pwd_vis_toggle_btn.setIcon(QIcon(icon_path))
+
+    def copy_pwd(self):
+        pwd = self.pwd_input.text() 
+        if len(pwd) == 0:
+            return
+        clipboard.setText(pwd)
 
     def get_only_checked_char_group_cbx(self):
         only_cbx_checked = None
