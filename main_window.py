@@ -241,7 +241,7 @@ class _Table(QTableWidget):
         _window.sort_results()
 
     def on_cell_focus_change(self, cur_cell_row_index, cur_cell_col_index, prev_cell_row_index, prev_cell_col_index):
-        if not self.can_update_last_focused:
+        if not self.can_update_last_focused or cur_cell_row_index == -1:
             return
         focused_acc_name = self.item(cur_cell_row_index, 0)
         self.last_focused_acc_name = focused_acc_name.text()
