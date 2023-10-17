@@ -22,7 +22,7 @@ def _on_icon_activation(reason):
 
 def show():
     global _tray_icon
-    app_icon = QIcon(r'.\Resources\Icons\app-icon.png')
+    app_icon = QIcon(f'{xml_handler.resources_dir}/Icons/app-icon.png')
     _tray_icon = QSystemTrayIcon(app_icon)
     right_click_menu = QMenu()
     show_action = right_click_menu.addAction('Show')

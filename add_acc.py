@@ -189,7 +189,7 @@ class _AddAccWindow(QWidget):
     def init_ui(self):
         # Window properties 
         # Icon
-        app_icon = QIcon(r'.\Resources\Icons\add-window-icon.png')
+        app_icon = QIcon(f'{xml_handler.resources_dir}/Icons/add-window-icon.png')
         self.setWindowIcon(app_icon)
         # Size
         width = 500
@@ -344,14 +344,14 @@ class _AddAccWindow(QWidget):
         self.pwd_vis_toggle_btn.setProperty('class', 'pwd-vis-toggle-btn')
         self.pwd_vis_toggle_btn.setSizePolicy(fixed_size_policy)
         self.pwd_vis_toggle_btn.setFixedSize(24, 24)
-        self.pwd_vis_toggle_btn.setIcon(QIcon(r'.\Resources\Icons\show-pwd-icon.png'))
+        self.pwd_vis_toggle_btn.setIcon(QIcon(f'{xml_handler.resources_dir}/Icons/show-pwd-icon.png'))
         self.pwd_vis_toggle_btn.setIconSize(QSize(24, 24))
         self.pwd_vis_toggle_btn.setCursor(QCursor(Qt.PointingHandCursor))
         # Copy pwd btn
         self.copy_pwd_btn.setProperty('class', 'copy-pwd-btn')
         self.copy_pwd_btn.setSizePolicy(fixed_size_policy)
         self.copy_pwd_btn.setFixedSize(QSize(28, 28))
-        self.copy_pwd_btn.setIcon(QIcon(r'.\Resources\Icons\copy-to-clipboard-icon.png'))
+        self.copy_pwd_btn.setIcon(QIcon(f'{xml_handler.resources_dir}/Icons/copy-to-clipboard-icon.png'))
         self.pwd_vis_toggle_btn.setIconSize(QSize(28, 28))
         self.copy_pwd_btn.setCursor(QCursor(Qt.PointingHandCursor))
         # Gen menu toggle vis btn
@@ -425,7 +425,7 @@ class _AddAccWindow(QWidget):
         echo_mode = QLineEdit.Normal if show_pwd else QLineEdit.Password
         self.pwd_input.setEchoMode(echo_mode)
         # Update icon
-        icon_path = r'.\Resources\Icons\hide-pwd-icon.png' if show_pwd else r'.\Resources\Icons\show-pwd-icon.png'
+        icon_path = f'{xml_handler.resources_dir}/Icons/hide-pwd-icon.png' if show_pwd else f'{xml_handler.resources_dir}/Icons/show-pwd-icon.png'
         self.pwd_vis_toggle_btn.setIcon(QIcon(icon_path))
 
     def copy_pwd(self):

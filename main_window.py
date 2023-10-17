@@ -86,7 +86,7 @@ class _TableHeaderWidget(QWidget):
         sort_col_visual_icon = QLabel(parent)
         sort_col_visual_icon.setSizePolicy(fixed_size_policy)
         sort_col_visual_icon.setFixedSize(24, 24)
-        icon_pixmap = QIcon(r'.\Resources\Icons\sort-col-icon.png').pixmap(24, 24)
+        icon_pixmap = QIcon(f'{xml_handler.resources_dir}/Icons\sort-col-icon.png').pixmap(24, 24)
         sort_col_visual_icon.setPixmap(icon_pixmap)
         # Add to layout
         parent_layout = QHBoxLayout()
@@ -382,7 +382,7 @@ class _MainWindow(QWidget):
     def init_ui(self): 
         # Window properties 
         # Icon
-        app_icon = QIcon(r'.\Resources\Icons\app-icon.png')
+        app_icon = QIcon(f'{xml_handler.resources_dir}/Icons/app-icon.png')
         self.setWindowIcon(app_icon)
         self.setWindowTitle('Account Manager')
         # Size
@@ -567,7 +567,7 @@ class _MainWindow(QWidget):
         self.sort_order_btn.setProperty('class', 'sort-order-btn')
         self.sort_order_btn.setSizePolicy(fixed_size_policy)
         self.sort_order_btn.setFixedSize(24, 24)
-        self.sort_order_btn.setIcon(QIcon(r'.\Resources\Icons\asc-button-icon.png'))
+        self.sort_order_btn.setIcon(QIcon(f'{xml_handler.resources_dir}/Icons/asc-button-icon.png'))
         self.sort_order_btn.setIconSize(QSize(24, 24))
         self.sort_order_btn.setCursor(QCursor(Qt.PointingHandCursor))
         # DEBUG_WIDGET Server connection label
@@ -579,28 +579,28 @@ class _MainWindow(QWidget):
         self.settings_btn.setProperty('class', 'settings-btn')
         self.settings_btn.setSizePolicy(fixed_size_policy)
         self.settings_btn.setFixedSize(28, 28)
-        self.settings_btn.setIcon(QIcon(r'.\Resources\Icons\settings-icon.png'))
+        self.settings_btn.setIcon(QIcon(f'{xml_handler.resources_dir}/Icons/settings-icon.png'))
         self.settings_btn.setIconSize(QSize(28, 28))
         self.settings_btn.setCursor(QCursor(Qt.PointingHandCursor))
         # Add acc btn
         self.add_acc_btn.setProperty('class', 'add-acc-btn')
         self.add_acc_btn.setSizePolicy(fixed_size_policy)
         self.add_acc_btn.setFixedSize(32, 32)
-        self.add_acc_btn.setIcon(QIcon(r'.\Resources\Icons\add-acc-button-icon.png'))
+        self.add_acc_btn.setIcon(QIcon(f'{xml_handler.resources_dir}/Icons/add-acc-button-icon.png'))
         self.add_acc_btn.setIconSize(QSize(32, 32))
         self.add_acc_btn.setCursor(QCursor(Qt.PointingHandCursor))
         # Manual sync btn
         self.manual_sync_btn.setProperty('class', 'manual-sync-btn')
         self.manual_sync_btn.setSizePolicy(fixed_size_policy)
         self.manual_sync_btn.setFixedSize(24, 24)
-        self.manual_sync_btn.setIcon(QIcon(r'.\Resources\Icons\manual-sync-button-icon.png'))
+        self.manual_sync_btn.setIcon(QIcon(f'{xml_handler.resources_dir}/Icons/manual-sync-button-icon.png'))
         self.manual_sync_btn.setIconSize(QSize(24, 24))
         self.manual_sync_btn.setCursor(QCursor(Qt.PointingHandCursor))
         # Pwd visibility btn
         self.all_pwds_vis_btn.setProperty('class', 'all-pwds-visibility-btn')
         self.all_pwds_vis_btn.setSizePolicy(fixed_size_policy)
         self.all_pwds_vis_btn.setFixedSize(24, 24)
-        icon_path = r'.\Resources\Icons\show-pwd-icon.png' if not _all_pwds_vis_bool else r'.\Resources\Icons\hide-pwd-icon.png'
+        icon_path = f'{xml_handler.resources_dir}/Icons/show-pwd-icon.png' if not _all_pwds_vis_bool else f'{xml_handler.resources_dir}/Icons/hide-pwd-icon.png'
         self.all_pwds_vis_btn.setIcon(QIcon(icon_path))
         self.all_pwds_vis_btn.setIconSize(QSize(24, 24))
         self.all_pwds_vis_btn.setCursor(QCursor(Qt.PointingHandCursor))
@@ -675,7 +675,7 @@ class _MainWindow(QWidget):
     def update_all_pwds_vis_btn(self):
         _set_all_pwds_vis_bool(not _all_pwds_vis_bool)
         # Update btn text
-        icon_path = r'.\Resources\Icons\show-pwd-icon.png' if not _all_pwds_vis_bool else r'.\Resources\Icons\hide-pwd-icon.png'
+        icon_path = f'{xml_handler.resources_dir}/Icons/show-pwd-icon.png' if not _all_pwds_vis_bool else f'{xml_handler.resources_dir}/Icons/hide-pwd-icon.png'
         self.all_pwds_vis_btn.setIcon(QIcon(icon_path))
 
     def reset_manual_pwd_vis_count(self):
@@ -758,7 +758,7 @@ class _MainWindow(QWidget):
     def on_sort_order_btn_click(self):
         self.sort_order = _DESC_ORDER if self.sort_order == _ASC_ORDER else _ASC_ORDER
         # Update icon
-        icon_path = r'.\Resources\Icons\desc-button-icon.png' if self.sort_order == _DESC_ORDER else r'.\Resources\Icons\asc-button-icon.png'
+        icon_path = f'{xml_handler.resources_dir}/Icons/desc-button-icon.png' if self.sort_order == _DESC_ORDER else f'{xml_handler.resources_dir}/Icons/asc-button-icon.png'
         self.sort_order_btn.setIcon(QIcon(icon_path))
         # Check if needed to update results
         item_count = len(self.table.get_all_accs())

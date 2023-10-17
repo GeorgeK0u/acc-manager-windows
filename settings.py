@@ -80,7 +80,7 @@ class _SettingsWindow(QWidget):
     def init_ui(self):
         # Window properties 
         # Icon
-        app_icon = QIcon(r'.\Resources\Icons\settings-icon.png')
+        app_icon = QIcon(f'{xml_handler.resources_dir}/Icons/settings-icon.png')
         self.setWindowIcon(app_icon)
         # Size
         width = 500

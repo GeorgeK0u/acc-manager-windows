@@ -4,6 +4,7 @@ from . import cryptor
 from . import view_handler
 from . import tray_handler
 
+resources_dir = None
 _save_file_name = None
 _tree = None
 _root = None
@@ -36,8 +37,9 @@ _pwd_tag_name = None
 
 def init():
     # XML parser
-    global _save_file_name, _tree, _root
-    _save_file_name = r'.\Resources\save.xml'
+    global resources_dir, _save_file_name, _tree, _root
+    resources_dir = r'..\..\Resources'
+    _save_file_name = f'{resources_dir}/save.xml'
     _tree = et.parse(_save_file_name)
     _root = _tree.getroot()
     # Security section

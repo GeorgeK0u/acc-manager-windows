@@ -25,7 +25,7 @@ class _LoginWindow(QWidget):
         # Window properties 
         self.setWindowTitle('Login')
         # Icon
-        app_icon = QIcon(r'.\Resources\Icons\app-icon.png')
+        app_icon = QIcon(f'{xml_handler.resources_dir}/Icons/app-icon.png')
         self.setWindowIcon(app_icon)
         # Size
         width = 300
