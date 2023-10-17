@@ -347,7 +347,7 @@ class _EditAccWindow(QWidget):
         self.copy_pwd_btn.setProperty('class', 'copy-pwd-btn')
         self.copy_pwd_btn.setSizePolicy(fixed_size_policy)
         self.copy_pwd_btn.setFixedSize(QSize(28, 28))
-        self.copy_pwd_btn.setIcon(QIcon(f'xml_handler.resources_dir}/Icons/copy-to-clipboard-icon.png'))
+        self.copy_pwd_btn.setIcon(QIcon(f'{xml_handler.resources_dir}/Icons/copy-to-clipboard-icon.png'))
         self.pwd_vis_toggle_btn.setIconSize(QSize(28, 28))
         self.copy_pwd_btn.setCursor(QCursor(Qt.PointingHandCursor))
         # Password toggle visibility btn
@@ -429,7 +429,7 @@ class _EditAccWindow(QWidget):
         self.pwd_input.setEchoMode(echo_mode)
         # Update icon
         icon_path = f'{xml_handler.resources_dir}/Icons/hide-pwd-icon.png' if show_pwd else f'{xml_handler.resources_dir}/Icons/show-pwd-icon.png'
-        self.pwd_vis_toggle_btn.setIcon(QIcon(icon_path)
+        self.pwd_vis_toggle_btn.setIcon(QIcon(icon_path))
 
     def copy_pwd(self):
         pwd = self.pwd_input.text() 

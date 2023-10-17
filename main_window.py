@@ -86,7 +86,7 @@ class _TableHeaderWidget(QWidget):
         sort_col_visual_icon = QLabel(parent)
         sort_col_visual_icon.setSizePolicy(fixed_size_policy)
         sort_col_visual_icon.setFixedSize(24, 24)
-        icon_pixmap = QIcon(f'{xml_handler.resources_dir}/Icons\sort-col-icon.png').pixmap(24, 24)
+        icon_pixmap = QIcon(f'{xml_handler.resources_dir}/Icons/sort-col-icon.png').pixmap(24, 24)
         sort_col_visual_icon.setPixmap(icon_pixmap)
         # Add to layout
         parent_layout = QHBoxLayout()
