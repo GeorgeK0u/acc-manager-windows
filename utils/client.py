@@ -133,7 +133,6 @@ def create_conn():
             print('Connection closed from client side')
         except Exception as e:
             print(f'Failed to connect. Exception: {e}')
-            _conn = None
         finally:
             # Update connection status from main thread
             # If main thread has been closed, signal emitting will be skipped (no error) 
