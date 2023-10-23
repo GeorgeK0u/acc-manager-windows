@@ -951,8 +951,8 @@ class _MainWindow(QWidget):
 
     def show_edit_acc_window(self):
         # No server connection
-        if not client.is_connected() or client.sync_instance.manual_sync_in_progress:
-            if not client.is_connected():
+        if not self.is_client_connected() or client.sync_instance.manual_sync_in_progress:
+            if not self.is_client_connected():
                 self.show_info_msg_box.emit('Cannot Edit', None, True)
             else:
                 self.show_info_msg_box.emit('Cannot Edit', 'Please wait for the sync to finish', False)
@@ -967,8 +967,8 @@ class _MainWindow(QWidget):
     
     def del_acc(self):
         # No server connection
-        if not client.is_connected() or client.sync_instance.manual_sync_in_progress:
-            if not client.is_connected():
+        if not self.is_client_connected() or client.sync_instance.manual_sync_in_progress:
+            if not self.is_client_connected():
                 self.show_info_msg_box.emit('Cannot Delete', None, True)
             else:
                 self.show_info_msg_box.emit('Cannot Delete', 'Please wait for the sync to finish', False)
@@ -1139,10 +1139,13 @@ class _MainWindow(QWidget):
             self.table.setLayout(None)
             self.no_accs_layout = None
 
+    def is_client_connected(self):
+        return self.conn_res_label.text() == CLIENT_CONNECTED
+
     def show_add_acc_window(self):
         # No server connection
-        if not client.is_connected() or client.sync_instance.manual_sync_in_progress:
-            if not client.is_connected():
+        if not self.is_client_connected() or client.sync_instance.manual_sync_in_progress:
+            if not self.is_client_connected():
                 self.show_info_msg_box.emit('Cannot Add', None, True)
             else:
                 self.show_info_msg_box.emit('Cannot Add', 'Please wait for the sync to finish', False)
