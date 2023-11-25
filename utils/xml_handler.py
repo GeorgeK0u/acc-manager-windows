@@ -1,5 +1,4 @@
-import xml.etree.ElementTree as et
-from lxml import etree as et2
+from lxml import etree as et
 import os
 
 from . import cryptor
@@ -42,7 +41,7 @@ def init():
     global resources_dir, _save_file_name, _tree, _root
     resources_dir = r'..\..\..\Resources' if os.getcwd().__contains__('_build') else r'.\Resources'
     _save_file_name = f'{resources_dir}/save.xml'
-    custom_parser = et2.XMLParser(recover=True)
+    custom_parser = et.XMLParser(recover=True)
     _tree = et.parse(_save_file_name, parser=custom_parser)
     _root = _tree.getroot()
     # Security section
