@@ -6,7 +6,7 @@ from . import view_handler
 from . import tray_handler
 
 resources_dir = None
-_save_file_name = None
+_save_file_dir = None
 _tree = None
 _root = None
 # Security section
@@ -38,11 +38,11 @@ _pwd_tag_name = None
 
 def init():
     # XML parser
-    global resources_dir, _save_file_name, _tree, _root
+    global resources_dir, _save_file_dir, _tree, _root
     resources_dir = r'..\..\..\Resources' if os.getcwd().__contains__('_build') else r'.\Resources'
-    _save_file_name = f'{resources_dir}/save.xml'
-    custom_parser = et.XMLParser(recover=True)
-    _tree = et.parse(_save_file_name, parser=custom_parser)
+    save_filename = 'save.xml'
+    _save_file_dir = f'{resources_dir}/{save_filename}'
+    _tree = et.parse(_save_file_dir)
     _root = _tree.getroot()
     # Security section
     global _security_section_tag_name, _security_section_tag, _lock_code_tag_name, _pwd_vis_tag_name
@@ -248,4 +248,4 @@ def del_acc(enc_acc_name):
     print('Deleted account from broadcast')
 
 def _commit():
-    _tree.write(_save_file_name)
+    _tree.write(_save_file_dir)
