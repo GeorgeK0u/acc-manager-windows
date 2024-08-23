@@ -45,20 +45,18 @@ def create_conn():
     def listen():
         global _conn, _is_main_thread_alive
         try:
-            server_local_ip = 'localhost'
+            server_local_ip = '192.168.2.105'
             public_ip = ''
             try:
                 public_ip = requests.get('https://api.ipify.org').text
             except:
                 print('Failed to get public IP address')
-                # Update connection status from main thread
-                view_handler.set_conn_text('Not connected')
                 return
             local_conn = None
             server_public_ip = None
             try:
                 server_public_ip = socket.gethostbyname('my-ddns.ddns.net')
-                local_conn = public_ip == server_public_ip
+                local_conn = public_ip == server_public_ip 
             except:
                 print('Failed to find No-IP DNS')
             host = ''
@@ -70,8 +68,6 @@ def create_conn():
                 # Server device not connected to wifi or not listening
                 if not output.__contains__('open'):
                     print('Server is not listening')
-                    # Update connection status from main thread
-                    view_handler.set_conn_text('Not connected')
                     return
                 host = server_local_ip
             else:
@@ -85,24 +81,24 @@ def create_conn():
             print('Socket got created!')
             # Main thread closed before socket connected handling
             _is_main_thread_alive = threading.main_thread().is_alive()
-            open = None
+            open_ = None
             if not _is_main_thread_alive:
                 send_close_socket_msg()
-                open = False
+                open_ = False
             else:
-                open = True
+                open_ = True
                 # Remove timeout
                 _conn.settimeout(None)
                 # Update connection status from main thread
                 view_handler.set_conn_text('Connected')
             # Listen for server msgs
-            while open:
+            while open_:
                 server_msg = None
                 try:
                     server_msg = _conn.recv(1024).decode(_UTF_8)
                     if server_msg == _CLOSE_CONN:
                         print('Server received the close socket message and sents it back to close the listen thread') 
-                        open = False
+                        open_ = False
                     elif server_msg.__contains__(SYNC_BC) or server_msg.__contains__(_MANUAL_SYNC):
                         if server_msg != _MANUAL_SYNC_END:
                             if server_msg.__contains__(SYNC_BC):
@@ -125,7 +121,7 @@ def create_conn():
                     else:
                         print(f'Server says {server_msg}')
                 except Exception as e:
-                    open = False
+                    open_ = False
                     print(f'Failed to receive msg from server. Exception {e}')
             # Close connection from client side
             _conn.close()
@@ -137,8 +133,8 @@ def create_conn():
             # Update connection status from main thread
             # If main thread has been closed, signal emitting will be skipped (no error) 
             view_handler.set_conn_text('Not connected')
-            # Update manual sync in progress status
-            sync_instance.set_manual_sync_in_progress(False)
+            # # Update manual sync in progress status
+            # sync_instance.set_manual_sync_in_progress(False)
     conn_thread = Thread(target=listen)
     conn_thread.start()
 
