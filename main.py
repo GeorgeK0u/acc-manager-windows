@@ -14,6 +14,8 @@ import edit_acc
 main_window_ref = None
 
 def on_active_window_change(active_window):
+    if not main_window_ref:
+        return
     # Prevent table custom focus from applying on window re-focus 
     if not active_window or active_window.winId() != main_window_ref.winId(): 
         main_window_ref.table.apply_custom_focus = False
