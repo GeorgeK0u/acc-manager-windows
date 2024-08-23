@@ -2,6 +2,8 @@ from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QWidget, QLineEdit, QPushButton, QMessageBox, QHBoxLayout, QShortcut
 from PySide2.QtGui import QIcon, QKeySequence, QCursor
 
+import add_acc
+import edit_acc
 from utils import xml_handler
 from utils import view_handler
 import main_window
@@ -68,6 +70,8 @@ class _LoginWindow(QWidget):
             return
         # Correct code
         main_window_ref = main_window.create()
+        add_acc.init()
+        edit_acc.init()
         view_handler.on_login(main_window_ref)
         # Close login window
         self.close()

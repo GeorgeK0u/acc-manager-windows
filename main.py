@@ -28,8 +28,8 @@ if __name__ == '__main__':
     cryptor.init()
     xml_handler.init()
     view_handler.init()
-    add_acc.init()
-    edit_acc.init()
+    # add_acc.init()
+    # edit_acc.init()
     if xml_handler.is_locked():
         login.create()
     else:
