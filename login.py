@@ -70,8 +70,6 @@ class _LoginWindow(QWidget):
             return
         # Correct code
         main_window_ref = main_window.create()
-        add_acc.init()
-        edit_acc.init()
         view_handler.on_login(main_window_ref)
         # Close login window
         self.close()
