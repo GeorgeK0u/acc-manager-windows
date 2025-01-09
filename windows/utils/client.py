@@ -1,4 +1,5 @@
 from PySide2.QtCore import QObject, Signal
+import requests
 
 import socket
 import threading
@@ -44,12 +45,22 @@ def create_conn():
         global _conn, _is_main_thread_alive
         try:
             try:
+                public_ip = requests.get('https://api.ipify.org').text
+            except:
+                print('Failed to get public IP address. Most likely no internet connection')
+                return
+            try:
                 server_public_ip = socket.gethostbyname('my-ddns.ddns.net')
             except:
-                print('Failed to find No-IP dns')
+                print('Failed to find No-IP DNS')
                 return
-            host = None
-            host = server_public_ip
+            # due to NAT loopback I cannot connect if server is on same LAN as device with public ip
+            # determine if connection is local or remote
+            if public_ip == server_public_ip:
+                # server private ip
+                host = '192.168.2.105'
+            else:
+                host = server_public_ip
             port = 56789
             _conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # Waiting X secs in between operations (only needed for before connected)
