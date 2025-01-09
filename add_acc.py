@@ -546,7 +546,10 @@ class _AddAccWindow(QWidget):
         self.acc_name_input.setText('')
         self.extra_info_input.setText('')
         self.pwd_input.setText('')
+        # focus on first input
         self.acc_name_input.setFocus()
+        # hide gen menu
+        self.gen_menu_toggle_vis_btn.hide_menu()
 
     def closeEvent(self, e):
         super().closeEvent(e)
