@@ -5,6 +5,7 @@ import socket
 import threading
 from threading import Thread
 import subprocess
+from subprocess import DEVNULL, PIPE
 from time import sleep 
 import json
 
@@ -45,33 +46,26 @@ def create_conn():
     def listen():
         global _conn, _is_main_thread_alive
         try:
-            server_local_ip = '192.168.2.105'
-            public_ip = ''
             try:
                 public_ip = requests.get('https://api.ipify.org').text
             except:
-                print('Failed to get public IP address')
+                print('Failed to get public IP address. Most likely wifi is off')
                 return
-            local_conn = None
-            server_public_ip = None
             try:
                 server_public_ip = socket.gethostbyname('my-ddns.ddns.net')
-                local_conn = public_ip == server_public_ip 
             except:
-                print('Failed to find No-IP DNS')
-            host = ''
+                print('Failed to find No-IP dns')
+                return
+            local_conn = public_ip == server_public_ip
+            host = None
+            # local
             if local_conn:
-                # Check if the server is running
-                port = 56789
-                command = f'nmap -p {port} {server_local_ip} | findstr "{port}/tcp"'
-                output = subprocess.run(command, shell=True, encoding=_UTF_8, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL).stdout.strip()
-                # Server device not connected to wifi or not listening
-                if not output.__contains__('open'):
-                    print('Server is not listening')
-                    return
-                host = server_local_ip
+                print('Local connection')
+                local_ip = run_ps_command("""$interfaceDetails = Get-NetIPAddress | Where-Object { $_.InterfaceAlias -eq 'Wi-Fi' } ; $interfaceDetails.IPAddress""")
+                host = local_ip
+            # outside
             else:
-                # Cannot check if the server is running before an error occurs at runtime
+                print('Outside connection')
                 host = server_public_ip
             port = 56789
             _conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -79,6 +73,8 @@ def create_conn():
             _conn.settimeout(_MAX_SECS_TRYING_TO_CONNECT)
             _conn.connect((host, port))
             print('Socket got created!')
+            # Remove timeout
+            _conn.settimeout(None)
             # Main thread closed before socket connected handling
             _is_main_thread_alive = threading.main_thread().is_alive()
             open_ = None
@@ -87,8 +83,6 @@ def create_conn():
                 open_ = False
             else:
                 open_ = True
-                # Remove timeout
-                _conn.settimeout(None)
                 # Update connection status from main thread
                 view_handler.set_conn_text('Connected')
             # Listen for server msgs
@@ -197,3 +191,12 @@ def send_close_socket_msg():
         print('Sent close signal to server')
     else:
         print('Failed to send close signal to server')
+
+def run_ps_command(command):
+    try:
+        full_command = f'powershell -Command "{command}"'
+        shell_instance = subprocess.run(args=full_command, shell=True, stderr=DEVNULL, stdout=PIPE)
+        out = shell_instance.stdout.decode().strip()
+        return out
+    except Exception as e:
+        print(f'Exception occured: {e}')
