@@ -4,8 +4,6 @@ import requests
 import socket
 import threading
 from threading import Thread
-import subprocess
-from subprocess import DEVNULL, PIPE
 from time import sleep 
 import json
 
@@ -47,26 +45,12 @@ def create_conn():
         global _conn, _is_main_thread_alive
         try:
             try:
-                public_ip = requests.get('https://api.ipify.org').text
-            except:
-                print('Failed to get public IP address. Most likely wifi is off')
-                return
-            try:
                 server_public_ip = socket.gethostbyname('my-ddns.ddns.net')
             except:
                 print('Failed to find No-IP dns')
                 return
-            local_conn = public_ip == server_public_ip
             host = None
-            # local
-            if local_conn:
-                print('Local connection')
-                local_ip = run_ps_command("""$interfaceDetails = Get-NetIPAddress | Where-Object { $_.InterfaceAlias -eq 'Wi-Fi' } ; $interfaceDetails.IPAddress""")
-                host = local_ip
-            # outside
-            else:
-                print('Outside connection')
-                host = server_public_ip
+            host = server_public_ip
             port = 56789
             _conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # Waiting X secs in between operations (only needed for before connected)
@@ -191,12 +175,3 @@ def send_close_socket_msg():
         print('Sent close signal to server')
     else:
         print('Failed to send close signal to server')
-
-def run_ps_command(command):
-    try:
-        full_command = f'powershell -Command "{command}"'
-        shell_instance = subprocess.run(args=full_command, shell=True, stderr=DEVNULL, stdout=PIPE)
-        out = shell_instance.stdout.decode().strip()
-        return out
-    except Exception as e:
-        print(f'Exception occured: {e}')
