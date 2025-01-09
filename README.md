@@ -1,2 +1,1 @@
-# account-manager
-Windows &amp; Android cross-platform app for storing safely personal accounts
+## Windows &amp; Android cross-platform app for storing safely personal accounts
