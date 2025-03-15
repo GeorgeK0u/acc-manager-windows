@@ -39,7 +39,7 @@ _pwd_tag_name = None
 def init():
     # XML parser
     global resources_dir, _save_file_dir, _tree, _root
-    resources_dir = r'..\..\..\Resources' if os.getcwd().__contains__('_build') else r'.\Resources'
+    resources_dir = r'..\..\..\resources' if os.getcwd().__contains__('_build') else r'.\resources'
     save_filename = 'save.xml'
     _save_file_dir = f'{resources_dir}/{save_filename}'
     _tree = et.parse(_save_file_dir)
