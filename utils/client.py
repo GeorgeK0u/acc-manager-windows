@@ -6,6 +6,7 @@ import threading
 from threading import Thread
 from time import sleep 
 import json
+import os
 
 from . import view_handler
 from . import xml_handler
@@ -50,7 +51,18 @@ def create_conn():
                 print('Failed to get public IP address. Most likely no internet connection')
                 return
             try:
-                server_public_ip = socket.gethostbyname('my-ddns.ddns.net')
+                # read connection values from json file
+                conn_json_file_dir = r'..\..\..\..\conn.json' if os.getcwd().__contains__('_build') else r'..\conn.json'
+                server_private_ip = None
+                hostname = None
+                port = None
+                with open(conn_json_file_dir, 'r') as file:
+                    data = json.load(file)
+                    server_private_ip = data['server_private_ip']
+                    hostname = data['hostname']
+                    port = int(data['port'])
+                # get hostname ip
+                server_public_ip = socket.gethostbyname(hostname)
             except:
                 print('Failed to find No-IP DNS')
                 return
@@ -58,10 +70,9 @@ def create_conn():
             # determine if connection is local or remote
             if public_ip == server_public_ip:
                 # server private ip
-                host = '192.168.2.105'
+                host = server_private_ip
             else:
                 host = server_public_ip
-            port = 56789
             _conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # Waiting X secs in between operations (only needed for before connected)
             _conn.settimeout(_MAX_SECS_TRYING_TO_CONNECT)
