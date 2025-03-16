@@ -977,6 +977,12 @@ class _MainWindow(QWidget):
         # Sync
         operator = 'D'
         acc_name = self.table.item(row_index, 0).text()
+        # delete confirmation
+        ret_value = QMessageBox.warning(self, 'Delete Confirmation', f'Are you sure you want to delete {acc_name} ?', QMessageBox.Yes, QMessageBox.No)
+        # no pressed
+        if ret_value == QMessageBox.No:
+            return
+        # delete account
         enc_acc_name = cryptor.encrypt(acc_name)
         msg = [client.SYNC_BC, operator, enc_acc_name]
         msg_json_string = cryptor.convert_to_json_string(msg)
