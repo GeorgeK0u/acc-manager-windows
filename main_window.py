@@ -761,40 +761,40 @@ class _MainWindow(QWidget):
         icon_path = f'{xml_handler.resources_dir}/Icons/desc-button-icon.png' if self.sort_order == _DESC_ORDER else f'{xml_handler.resources_dir}/Icons/asc-button-icon.png'
         self.sort_order_btn.setIcon(QIcon(icon_path))
         # Check if needed to update results
-        item_count = len(self.table.get_all_accs())
+        results = self.table.get_all_accs()
+        item_count = len(results)
         if item_count <= 1:
             return
-        # Update sort
-        self.sort_results()
+        # clear all items
+        self.table.clear_all_accs()
+        # reverse
+        results.reverse()
+        # re-add
+        for result in results:
+            self.table.append_acc(result)
+        results = self.table.get_all_accs()
+        # Update pwd copy list
+        self.update_accs_copy_list(results)
+        # reset manual pwd vis count
+        self.reset_manual_pwd_vis_count()
 
     def get_time_added_item_index_of(self, accs, item):
         index = accs.index(item)
         return index
 
     def sort_by_time_added(self, results):
-        item_count = len(results)
-        accs_sorted_by_time_added = xml_handler.get_accs()
-        # Sort
-        i = 0
-        while i < item_count - 1:
-            top_item = results[i]
-            top_item_index = self.get_time_added_item_index_of(accs_sorted_by_time_added, top_item)
-            top_index = i
-            j = i + 1
-            while j < item_count:
-                item_index = self.get_time_added_item_index_of(accs_sorted_by_time_added, results[j])
-                if (self.sort_order == _ASC_ORDER and item_index < top_item_index) or (self.sort_order == _DESC_ORDER and item_index > top_item_index):
-                    top_item = results[j]
-                    top_index = j
-                    top_item_index = item_index
-                j += 1
-            # Transport
-            if top_index > i:
-                tmp_item = results[i]
-                results[top_index] = tmp_item
-                results[i] = top_item
-            i += 1
-        return results
+        results_by_time_added_sorted = xml_handler.get_accs()
+        for acc in reversed(results_by_time_added_sorted):
+            for result in results:
+                if result != acc:
+                    continue
+                results.remove(result)
+                break
+            else:
+                results_by_time_added_sorted.remove(acc)
+        if self.sort_order == _DESC_ORDER:
+            results_by_time_added_sorted.reverse()
+        return results_by_time_added_sorted
 
     def greater(self, a, b):
         # Ascending comparison
@@ -818,72 +818,19 @@ class _MainWindow(QWidget):
         return 2
 
     def sort_alphabetically(self, results):
-        item_count = len(results)
-        # Get sort column items
-        col_values = []
-        for item in results:
-            for col_index in range(len(item)):
-                if col_index != _sort_col_index:
-                    continue
-                value = item[col_index]
-                col_values.append(value)
-                break
-        # Sort
-        i = 0
-        while i < item_count - 1:
-            top = col_values[i]
-            top_index = i
-            j = i + 1
-            while j < item_count:
-                value = col_values[j]
-                res = self.greater(top, value)
-                if (self.sort_order == _ASC_ORDER and res == 1) or (self.sort_order == _DESC_ORDER and res == 2):
-                    top = value
-                    top_index = j
-                j += 1
-            # Transport
-            if top_index > i:
-                # Col value transport
-                tmp_value = col_values[i]
-                col_values[top_index] = tmp_value
-                col_values[i] = top
-                # Item transport
-                tmp_item = results[i]
-                top_item = results[top_index]
-                results[top_index] = tmp_item
-                results[i] = top_item
-            i += 1
+        results.sort(key=lambda result: result[_sort_col_index], reverse=self.sort_order==_DESC_ORDER)
         return results 
 
-    def get_count_of_filled_values(self, item):
+    def get_filled_fields_count(self, result):
         filled_count = 0
-        for value in item:
-            if value == '-':
-                continue
+        for i in range(len(result)): 
+            if result[i] == '-':
+                continue;
             filled_count += 1
         return filled_count
-
+    
     def sort_by_num_of_filled_fields(self, results):
-        item_count = len(results)
-        # Sort
-        i = 0
-        while i < item_count - 1:
-            top = self.get_count_of_filled_values(results[i])
-            top_index = i
-            j = i + 1
-            while j < item_count:
-                count = self.get_count_of_filled_values(results[j])
-                if (self.sort_order == _ASC_ORDER and count < top) or (self.sort_order == _DESC_ORDER and count > top):
-                    top = count
-                    top_index = j
-                j += 1
-            # Transport
-            if top_index > i:
-                tmp_item = results[i]
-                top_item = results[top_index]
-                results[top_index] = tmp_item
-                results[i] = top_item
-            i += 1
+        results.sort(key=self.get_filled_fields_count, reverse=self.sort_order==_DESC_ORDER)
         return results
 
     def copy_to_clipboard(self):
